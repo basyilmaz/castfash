@@ -38,7 +38,7 @@ interface KieResultJson {
 export class KieImageProvider implements AiImageProvider {
   private readonly logger = new Logger(KieImageProvider.name);
   private readonly envApiKey = process.env.KIE_API_KEY;
-  private readonly envModelId = process.env.KIE_MODEL_ID ?? 'nano-banana-pro';
+  private readonly envModelId = process.env.KIE_MODEL_ID ?? 'google/nano-banana-pro';
 
   // KIE API endpoints
   private readonly CREATE_TASK_URL = 'https://api.kie.ai/api/v1/jobs/createTask';
