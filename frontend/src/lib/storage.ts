@@ -1,4 +1,4 @@
-const TOKEN_KEY = "castfash-token";
+const TOKEN_KEY = "castfash_access_token";
 const ORG_KEY = "castfash-organization";
 
 interface Organization {
