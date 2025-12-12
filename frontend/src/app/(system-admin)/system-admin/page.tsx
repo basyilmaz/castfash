@@ -69,9 +69,16 @@ export default function SystemAdminDashboard() {
     return (
         <div className="space-y-8">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold mb-2">Sistem Özeti</h1>
-                <p className="text-textMuted">Tüm sistem metrikleri ve son aktiviteler</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold mb-2">Sistem Özeti</h1>
+                    <p className="text-textMuted">Tüm sistem metrikleri ve son aktiviteler</p>
+                </div>
+                <div className="text-right">
+                    <div className="text-sm text-textMuted">Versiyon</div>
+                    <div className="text-lg font-mono text-primary">v1.0.0</div>
+                    <div className="text-xs text-textMuted mt-1">Build: {new Date().toLocaleDateString('tr-TR')}</div>
+                </div>
             </div>
 
             {/* Main Stats */}
