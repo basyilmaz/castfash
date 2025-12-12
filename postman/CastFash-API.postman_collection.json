@@ -1,0 +1,332 @@
+{
+    "info": {
+        "name": "CastFash API",
+        "description": "CastFash API Collection for testing",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3002"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "Health",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/health"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Signup",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/signup",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Test123!@#\",\n  \"name\": \"Test User\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.accessToken) {",
+                                    "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/login",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Test123!@#\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Forgot Password",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/forgot-password",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"test@example.com\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Reset Password",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/reset-password",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"YOUR_RESET_TOKEN\",\n  \"newPassword\": \"NewPassword123!@#\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Verify Email",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/verify-email",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"YOUR_VERIFICATION_TOKEN\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Refresh Token",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/refresh",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"YOUR_REFRESH_TOKEN\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Products",
+            "item": [
+                {
+                    "name": "List Products",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/products",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Product",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/products/1",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Generations",
+            "item": [
+                {
+                    "name": "List Generations",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/generations",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Generate Image",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/products/1/generate",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"frontCount\": 1,\n  \"backCount\": 0,\n  \"aspectRatio\": \"3:4\",\n  \"resolution\": \"1024x1024\",\n  \"qualityMode\": \"STANDARD\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Credits",
+            "item": [
+                {
+                    "name": "Get Balance",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/credits/balance",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Admin - Queue",
+            "item": [
+                {
+                    "name": "Queue Stats",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/system-admin/queue/stats",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Clear Old Jobs",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/system-admin/queue/clear",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Admin - Providers",
+            "item": [
+                {
+                    "name": "Provider Health",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/system-admin/providers/health",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Reset Provider Stats",
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/system-admin/providers/1/reset-stats",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Admin - Logs",
+            "item": [
+                {
+                    "name": "List Log Files",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/system-admin/logs",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Recent Logs",
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/system-admin/logs/live/recent?minutes=5",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,691 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  MEMBER
+}
+
+enum Gender {
+  FEMALE
+  MALE
+}
+
+enum SceneType {
+  PRESET
+  SOLID_COLOR
+}
+
+enum GenerationStatus {
+  PENDING
+  DONE
+  ERROR
+}
+
+enum CreditType {
+  PURCHASE
+  SPEND
+  ADJUST
+  PRODUCT_GENERATION
+  MODEL_GENERATION
+  SCENE_GENERATION
+  FINAL_GENERATION
+}
+
+enum ViewType {
+  FRONT
+  BACK
+}
+
+enum AiProviderType {
+  KIE
+  REPLICATE
+  FAL
+}
+
+enum AssetType {
+  UPLOADED
+  AI_GENERATED
+}
+
+enum AuditAction {
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  USER_PASSWORD_RESET
+  ORGANIZATION_CREATED
+  ORGANIZATION_UPDATED
+  ORGANIZATION_DELETED
+  CREDITS_ADJUSTED
+  PRODUCT_CREATED
+  PRODUCT_UPDATED
+  PRODUCT_DELETED
+  MODEL_CREATED
+  MODEL_UPDATED
+  MODEL_DELETED
+  GENERATION_CREATED
+  GENERATION_UPDATED
+  SYSTEM_CONFIG_UPDATED
+  PROVIDER_STATS_RESET
+  ADMIN_LOGIN
+  ADMIN_ACTION
+}
+
+model AuditLog {
+  id          Int          @id @default(autoincrement())
+  action      AuditAction
+  userId      Int?
+  targetType  String?      // User, Organization, Product, etc.
+  targetId    Int?
+  changes     Json?        // Before/after values
+  metadata    Json?        // Additional context
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+
+  @@index([action])
+  @@index([userId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+model User {
+  id           Int                 @id @default(autoincrement())
+  email        String              @unique
+  passwordHash String
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  organizations OrganizationUser[]
+  ownedOrganizations Organization[] @relation("OwnedOrganizations")
+  isSuperAdmin Boolean @default(false)
+  
+  // Password Reset
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+  
+  // Email Verification
+  isEmailVerified    Boolean   @default(false)
+  verifyToken        String?   @unique
+  verifyTokenExpiry  DateTime?
+}
+
+model Organization {
+  id               Int                 @id @default(autoincrement())
+  name             String
+  ownerId          Int
+  remainingCredits Int                 @default(0)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  owner         User                @relation("OwnedOrganizations", fields: [ownerId], references: [id])
+  users         OrganizationUser[]
+  products      Product[]
+  modelProfiles ModelProfile[]
+  scenePresets  ScenePreset[]
+  generationRequests GenerationRequest[]
+  creditTransactions CreditTransaction[]
+  aiProviderConfigs AiProviderConfig[]
+  batchJobs     BatchJob[]
+  invoices      Invoice[]
+}
+
+model OrganizationUser {
+  id             Int            @id @default(autoincrement())
+  userId         Int
+  organizationId Int
+  role           UserRole
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+model ProductCategory {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  products Product[]
+}
+
+// Product Variant Models
+model ProductVariant {
+  id          Int       @id @default(autoincrement())
+  productId   Int
+  sku         String?
+  sizeId      Int?
+  colorId     Int?
+  stock       Int       @default(0)
+  price       Float?
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size        ProductSize?  @relation(fields: [sizeId], references: [id])
+  color       ProductColor? @relation(fields: [colorId], references: [id])
+
+  @@unique([productId, sizeId, colorId])
+  @@index([productId])
+  @@index([sizeId])
+  @@index([colorId])
+}
+
+model ProductSize {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique // XS, S, M, L, XL, XXL
+  order    Int       @default(0)
+  variants ProductVariant[]
+}
+
+model ProductColor {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique // Siyah, Beyaz, Kırmızı
+  hexCode   String    // #000000
+  variants  ProductVariant[]
+}
+
+model Product {
+  id              Int       @id @default(autoincrement())
+  organizationId  Int
+  categoryId      Int
+  name            String
+  sku             String?
+  
+  // Asset URLs
+  productImageUrl     String
+  productBackImageUrl String?
+  
+  // Asset type tracking
+  productImageType     AssetType @default(UPLOADED)
+  productBackImageType AssetType @default(UPLOADED)
+  
+  // AI generation prompts (if AI_GENERATED)
+  productImagePrompt     String?
+  productBackImagePrompt String?
+  
+  // Token tracking
+  tokensSpentOnCreation Int @default(0)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  category     ProductCategory @relation(fields: [categoryId], references: [id])
+  generationRequests GenerationRequest[]
+  generatedImages    GeneratedImage[]
+  variants           ProductVariant[]
+
+  @@index([organizationId])
+  @@index([categoryId])
+  @@index([createdAt])
+}
+
+model ModelProfile {
+  id               Int       @id @default(autoincrement())
+  organizationId   Int
+  name             String
+  gender           Gender
+  bodyType         String?
+  skinTone         String?
+  
+  // Reference URLs
+  faceReferenceUrl String?
+  backReferenceUrl String?
+  
+  // Asset type tracking
+  faceReferenceType AssetType @default(UPLOADED)
+  backReferenceType AssetType @default(UPLOADED)
+  
+  modelType        String    @default("IMAGE_REFERENCE")
+  hairColor        String?
+  hairStyle        String?
+  ageRange         String?
+  
+  // Prompts (used for both AI generation and text-only models)
+  frontPrompt      String?
+  backPrompt       String?
+  stylePrompt      String?
+  
+  // Token tracking
+  tokensSpentOnCreation Int @default(0)
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  generationRequests GenerationRequest[]
+
+  @@index([organizationId])
+  @@index([gender])
+}
+
+model ScenePreset {
+  id                    Int       @id @default(autoincrement())
+  packId                String?
+  organizationId        Int?
+  name                  String
+  type                  SceneType
+  
+  // Background asset
+  backgroundReferenceUrl String?
+  backgroundType         AssetType @default(UPLOADED)
+  
+  solidColorHex         String?
+  backgroundPrompt      String?
+  lighting              String?
+  mood                  String?
+  suggestedAspectRatio  String?
+  qualityPreset         String?
+  category              String?
+  tags                  String?
+  
+  // Token tracking
+  tokensSpentOnCreation Int @default(0)
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  pack                  ScenePack? @relation("ScenePackScenes", fields: [packId], references: [id])
+
+  organization      Organization?     @relation(fields: [organizationId], references: [id])
+  generationRequests GenerationRequest[]
+
+  @@unique([organizationId, name])
+}
+
+model ScenePack {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String?
+  isPublic    Boolean     @default(true)
+  isPremium   Boolean     @default(false)
+  category    String?
+  tags        String?
+  scenes      ScenePreset[] @relation("ScenePackScenes")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model GenerationRequest {
+  id             Int              @id @default(autoincrement())
+  organizationId Int
+  productId      Int
+  modelProfileId Int?
+  scenePresetId  Int?
+  aspectRatio    String   @default("9:16")
+  resolution     String   @default("4K")
+  qualityMode    String   @default("STANDARD")
+  frontCount     Int
+  backCount      Int
+  status         GenerationStatus @default(PENDING)
+  creditsConsumed Int
+  errorMessage   String?
+  frontError     String?
+  backError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  product      Product      @relation(fields: [productId], references: [id])
+  modelProfile ModelProfile? @relation(fields: [modelProfileId], references: [id])
+  scenePreset  ScenePreset?  @relation(fields: [scenePresetId], references: [id])
+  generatedImages GeneratedImage[]
+
+  @@index([organizationId, createdAt])
+  @@index([productId])
+  @@index([modelProfileId])
+  @@index([scenePresetId])
+  @@index([status])
+}
+
+model GeneratedImage {
+  id                  Int       @id @default(autoincrement())
+  generationRequestId Int
+  productId           Int
+  viewType            ViewType
+  indexNumber         Int
+  imageUrl            String
+  createdAt           DateTime @default(now())
+
+  generationRequest GenerationRequest @relation(fields: [generationRequestId], references: [id])
+  product           Product @relation(fields: [productId], references: [id])
+
+  @@index([generationRequestId])
+  @@index([productId])
+  @@index([viewType])
+}
+
+model CreditTransaction {
+  id             Int       @id @default(autoincrement())
+  organizationId Int
+  type           CreditType
+  amount         Int
+  note           String?
+  
+  // References to what consumed the credits
+  productId         Int?
+  modelProfileId    Int?
+  scenePresetId     Int?
+  generationRequestId Int?
+  
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([type])
+}
+
+model AiProviderConfig {
+  id             Int            @id @default(autoincrement())
+  organizationId Int?
+  provider       AiProviderType
+  apiKey         String?
+  baseUrl        String?
+  modelId        String?
+  settings       Json?
+  isActive       Boolean        @default(true)
+  
+  // Provider Management
+  priority       Int            @default(1)        // 1=Primary, 2=Secondary, 3=Tertiary
+  maxRetries     Int            @default(3)
+  timeoutMs      Int            @default(30000)
+  
+  // Health Tracking
+  lastError      String?
+  lastErrorAt    DateTime?
+  errorCount     Int            @default(0)
+  successCount   Int            @default(0)
+  avgResponseMs  Int?
+  
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization   Organization?  @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([priority, isActive])
+}
+
+model SystemConfig {
+  key         String   @id
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+// =============================================================================
+// Batch Processing Models
+// =============================================================================
+
+enum BatchJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum BatchJobType {
+  GENERATION
+  EXPORT
+  IMPORT
+  BULK_UPDATE
+}
+
+model BatchJob {
+  id             Int            @id @default(autoincrement())
+  organizationId Int
+  type           BatchJobType
+  status         BatchJobStatus @default(PENDING)
+  name           String?
+  description    String?
+  
+  // Progress tracking
+  totalItems     Int            @default(0)
+  processedItems Int            @default(0)
+  failedItems    Int            @default(0)
+  
+  // Configuration
+  settings       Json?          // Job-specific settings
+  inputData      Json?          // Input data or file references
+  outputData     Json?          // Output data or file references
+  
+  // Error handling
+  errorMessage   String?
+  errorDetails   Json?
+  
+  // Timing
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  createdBy      Int?           // User who started the job
+  
+  items          BatchJobItem[]
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  
+  @@index([organizationId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model BatchJobItem {
+  id          Int            @id @default(autoincrement())
+  batchJobId  Int
+  itemIndex   Int
+  status      BatchJobStatus @default(PENDING)
+  inputData   Json?
+  outputData  Json?
+  errorMessage String?
+  processedAt DateTime?
+  createdAt   DateTime       @default(now())
+  
+  batchJob    BatchJob       @relation(fields: [batchJobId], references: [id], onDelete: Cascade)
+  
+  @@index([batchJobId])
+  @@index([status])
+}
+
+// =============================================================================
+// Invoice & Billing Models
+// =============================================================================
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  BANK_TRANSFER
+  PAYPAL
+  STRIPE
+}
+
+model Invoice {
+  id             Int           @id @default(autoincrement())
+  organizationId Int
+  invoiceNumber  String        @unique // INV-2024-0001
+  status         InvoiceStatus @default(DRAFT)
+  
+  // Dates
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime
+  paidAt         DateTime?
+  
+  // Amounts
+  subtotal       Float
+  taxRate        Float         @default(18) // KDV %18
+  taxAmount      Float
+  discountAmount Float         @default(0)
+  totalAmount    Float
+  currency       String        @default("TRY")
+  
+  // Customer info (denormalized for PDF generation)
+  customerName   String
+  customerEmail  String
+  customerAddress String?
+  taxId          String?       // Vergi No
+  
+  // Payment
+  paymentMethod  PaymentMethod?
+  paymentReference String?
+  
+  // Notes
+  notes          String?
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  items          InvoiceItem[]
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  
+  @@index([organizationId])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@index([issueDate])
+}
+
+model InvoiceItem {
+  id          Int       @id @default(autoincrement())
+  invoiceId   Int
+  description String
+  quantity    Int       @default(1)
+  unitPrice   Float
+  totalPrice  Float
+  
+  // Reference to what was purchased
+  productType String?   // "credits", "subscription", etc.
+  productId   String?   // ID of the product
+  
+  createdAt   DateTime  @default(now())
+  
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  @@index([invoiceId])
+}
+
+// Prompt Management Models
+enum PromptType {
+  MASTER
+  SCENE
+  POSE
+  LIGHTING
+  STYLE
+  NEGATIVE
+}
+
+enum PromptCategoryType {
+  PRODUCT
+  MODEL
+  GENERAL
+  BACKGROUND
+  QUALITY
+}
+
+model PromptTemplate {
+  id          Int                   @id @default(autoincrement())
+  name        String
+  type        PromptType
+  category    PromptCategoryType?
+  content     String                @db.Text
+  variables   Json?                 // {product_name}, {model_name}, etc.
+  isActive    Boolean               @default(true)
+  priority    Int                   @default(0)
+  tags        String[]              @default([])
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  createdBy   Int?                  // Admin user ID
+  
+  versions    PromptVersion[]
+  analytics   PromptAnalytics[]
+  
+  @@index([type])
+  @@index([isActive])
+  @@map("prompt_templates")
+}
+
+model PromptVersion {
+  id          Int              @id @default(autoincrement())
+  templateId  Int
+  version     String           // "v1.0", "v1.1", etc.
+  content     String           @db.Text
+  changes     String?          @db.Text // What changed
+  createdAt   DateTime         @default(now())
+  createdBy   Int?             // Admin user ID
+  
+  template    PromptTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  @@index([templateId])
+  @@map("prompt_versions")
+}
+
+model PromptPreset {
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String?  @db.Text
+  scenePrompt     String?  @db.Text
+  posePrompt      String?  @db.Text
+  lightingPrompt  String?  @db.Text
+  stylePrompt     String?  @db.Text
+  negativePrompt  String?  @db.Text
+  isActive        Boolean  @default(true)
+  tags            String[] @default([])
+  usageCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       Int?     // Admin user ID
+  
+  @@index([isActive])
+  @@map("prompt_presets")
+}
+
+model PromptCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  icon        String?  // Emoji or icon name
+  color       String?  // Hex color code
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  
+  @@map("prompt_categories")
+}
+
+model PromptAnalytics {
+  id              Int      @id @default(autoincrement())
+  templateId      Int
+  generationId    Int?     // Reference to generation that used this prompt
+  success         Boolean
+  qualityScore    Float?   // 0-10
+  executionTime   Int?     // milliseconds
+  errorMessage    String?  @db.Text
+  combination     Json?    // What other prompts were used together
+  createdAt       DateTime @default(now())
+  
+  template        PromptTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  @@index([templateId])
+  @@index([success])
+  @@index([createdAt])
+  @@map("prompt_analytics")
+}

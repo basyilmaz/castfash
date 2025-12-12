@@ -1,0 +1,36 @@
+# Node modules
+node_modules/
+
+# Build output
+.next/
+out/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+
+# Test
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Docker
+Dockerfile

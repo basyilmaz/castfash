@@ -1,0 +1,383 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { AppCard } from "@/components/ui/AppCard";
+import { AppBadge } from "@/components/ui/AppBadge";
+import { AppButton } from "@/components/ui/AppButton";
+import { Thumb } from "@/components/ui/Thumb";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { AppInput } from "@/components/ui/AppInput";
+import { AppSelect } from "@/components/ui/AppSelect";
+import { AppTabs } from "@/components/ui/AppTabs";
+import { AppTable } from "@/components/ui/AppTable";
+import { authStorage } from "@/lib/storage";
+import {
+  getGenerationsByProduct,
+  getGeneration,
+  getModelProfiles,
+  getProduct,
+  getScenes,
+  triggerGeneration
+} from "@/lib/api/admin";
+import { GenerationRequest, ModelProfile, Product, ScenePreset } from "@/types";
+
+type GenerationStatusLocal = "idle" | "running" | "completed" | "failed";
+
+export default function ProductDetailPage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [gens, setGens] = useState<GenerationRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const productId = useMemo(() => Number(params?.id), [params?.id]);
+
+  useEffect(() => {
+    const token = authStorage.token();
+    if (!token || Number.isNaN(productId)) return;
+    setLoading(true);
+    Promise.all([
+      getProduct(token, productId),
+      getGenerationsByProduct(token, productId).catch(() => [])
+    ])
+      .then(([prod, generationList]) => {
+        setProduct(prod);
+        setGens(Array.isArray(generationList) ? generationList : []);
+      })
+      .finally(() => setLoading(false));
+  }, [productId]);
+
+  const formatDate = (value?: string) =>
+    value ? new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
+
+  if (!loading && !product) {
+    return (
+      <EmptyState
+        title="Product not found"
+        description="This product is not available."
+        actionLabel="Back to products"
+        onAction={() => router.push("/products")}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        title={product ? product.name : "Loading product..."}
+        subtitle="Review metadata and AI-ready references."
+        actions={
+          <>
+            <AppButton variant="ghost" onClick={() => router.push("/products")}>
+              Back to list
+            </AppButton>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AppCard className="p-5 space-y-3">
+          <p className="text-sm text-slate-300">Product metadata</p>
+          <div className="flex flex-wrap gap-2">
+            <AppBadge>{product?.category ?? "—"}</AppBadge>
+            <AppBadge variant="success">Front ref set</AppBadge>
+            <AppBadge variant={product?.productBackImageUrl ? "success" : "warning"}>
+              {product?.productBackImageUrl ? "Back ref set" : "Back ref optional"}
+            </AppBadge>
+          </div>
+          <div className="grid gap-2 text-sm text-slate-200">
+            <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2">
+              <span>Name</span>
+              <span className="text-slate-100">{product?.name ?? "Loading..."}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2">
+              <span>Category</span>
+              <span className="text-slate-100">{product?.category ?? product?.categoryId ?? "—"}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2">
+              <span>Created</span>
+              <AppBadge>{product ? formatDate(product.createdAt) : "—"}</AppBadge>
+            </div>
+          </div>
+        </AppCard>
+
+        <AppCard className="p-5 space-y-3">
+          <p className="text-sm text-slate-300">Reference images</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-2">
+              <p className="text-xs text-slate-400 mb-2">Front</p>
+              {product?.productImageUrl ? (
+                <img
+                  src={product.productImageUrl}
+                  alt={product.name}
+                  className="w-full rounded-xl object-cover aspect-[4/5]"
+                />
+              ) : (
+                <div className="aspect-[4/5] rounded-xl border border-dashed border-slate-700 bg-slate-900/50" />
+              )}
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-2">
+              <p className="text-xs text-slate-400 mb-2">Back</p>
+              {product?.productBackImageUrl ? (
+                <img
+                  src={product.productBackImageUrl}
+                  alt={`${product.name} back`}
+                  className="w-full rounded-xl object-cover aspect-[4/5]"
+                />
+              ) : (
+                <div className="aspect-[4/5] rounded-xl border border-dashed border-slate-700 bg-slate-900/50 flex items-center justify-center text-xs text-slate-500">
+                  Optional
+                </div>
+              )}
+            </div>
+          </div>
+        </AppCard>
+      </div>
+
+      <GeneratePanel
+        productId={productId}
+        onComplete={(gen) => setGens((prev) => [gen, ...prev])}
+      />
+
+      <AppCard className="p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-300">Recent generations for this product</p>
+            <p className="text-base text-white font-semibold">Latest looks</p>
+          </div>
+        </div>
+        {gens.length === 0 && !loading ? (
+          <EmptyState
+            title="No generations yet"
+            description="Run your first render to see model outputs here."
+            actionLabel="Generate look"
+            onAction={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          />
+        ) : (
+          <AppTable
+            data={gens}
+            empty="Loading..."
+            columns={[
+              { key: "id", label: "ID" },
+              {
+                key: "createdAt",
+                label: "Created",
+                render: (row) => formatDate(row.createdAt)
+              },
+              {
+                key: "counts",
+                label: "Counts",
+                render: (row) => `${row.frontCount} front / ${row.backCount} back`
+              },
+              {
+                key: "status",
+                label: "Status",
+                render: (row) => <AppBadge variant={row.status === "completed" || row.status === "DONE" ? "success" : "warning"}>{row.status}</AppBadge>
+              }
+            ]}
+          />
+        )}
+      </AppCard>
+    </div>
+  );
+}
+
+function GeneratePanel({
+  productId,
+  onComplete
+}: {
+  productId: number;
+  onComplete: (gen: GenerationRequest) => void;
+}) {
+  const [modelProfiles, setModelProfiles] = useState<ModelProfile[]>([]);
+  const [scenes, setScenes] = useState<ScenePreset[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [selectedScene, setSelectedScene] = useState<string>("");
+  const [frontCount, setFrontCount] = useState(2);
+  const [backCount, setBackCount] = useState(2);
+  const [status, setStatus] = useState<GenerationStatusLocal>("idle");
+  const [currentGen, setCurrentGen] = useState<GenerationRequest | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = authStorage.token();
+    if (!token) return;
+    Promise.all([getModelProfiles(token), getScenes(token)]).then(([profiles, sceneList]) => {
+      setModelProfiles(profiles);
+      setScenes(sceneList);
+    });
+  }, []);
+
+  const canGenerate = selectedModel && selectedScene && (frontCount > 0 || backCount > 0);
+
+  const pollGeneration = (token: string, id: number) => {
+    const interval = setInterval(async () => {
+      try {
+        const gen = await getGeneration(token, id);
+        setCurrentGen(gen);
+        if (gen.status === "completed" || gen.status === "failed" || gen.status === "DONE" || gen.status === "ERROR") {
+          clearInterval(interval);
+          setStatus(gen.status === "completed" || gen.status === "DONE" ? "completed" : "failed");
+          if (gen.status === "completed" || gen.status === "DONE") {
+            onComplete(gen);
+          }
+        }
+      } catch (err: any) {
+        setError(err.message ?? "Polling failed");
+        clearInterval(interval);
+        setStatus("failed");
+      }
+    }, 2500);
+  };
+
+  const handleGenerate = async () => {
+    const token = authStorage.token();
+    if (!token) {
+      setError("Session expired");
+      return;
+    }
+    if (!canGenerate) return;
+    setError(null);
+    setStatus("running");
+    try {
+      const payload = {
+        productId,
+        modelProfileId: Number(selectedModel),
+        scenePresetId: Number(selectedScene),
+        frontCount,
+        backCount
+      };
+      const res = await triggerGeneration(token, payload);
+      const genId = res?.id ?? res?.generationId;
+      if (genId) {
+        pollGeneration(token, genId);
+      } else {
+        setStatus("failed");
+        setError("No generation id returned");
+      }
+    } catch (err: any) {
+      setError(err.message ?? "Generation failed");
+      setStatus("failed");
+    }
+  };
+
+  const sceneMeta = scenes.find((s) => String(s.id) === selectedScene);
+
+  return (
+    <AppCard className="p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-slate-300">Generate Panel V2</p>
+          <p className="text-base text-white font-semibold">Front & Back looks</p>
+        </div>
+        <AppBadge variant={status === "running" ? "warning" : status === "completed" ? "success" : "default"}>
+          {status}
+        </AppBadge>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="space-y-3">
+          <AppSelect
+            label="Model profile"
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+          >
+            <option value="">Select model</option>
+            {modelProfiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </AppSelect>
+
+          <AppSelect
+            label="Scene"
+            value={selectedScene}
+            onChange={(e) => setSelectedScene(e.target.value)}
+          >
+            <option value="">Select scene</option>
+            {scenes.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </AppSelect>
+
+          <div className="grid grid-cols-2 gap-3">
+            <AppInput
+              label="Front count"
+              type="number"
+              min={0}
+              value={frontCount}
+              onChange={(e) => setFrontCount(Number(e.target.value))}
+            />
+            <AppInput
+              label="Back count"
+              type="number"
+              min={0}
+              value={backCount}
+              onChange={(e) => setBackCount(Number(e.target.value))}
+            />
+          </div>
+
+          {sceneMeta && (
+            <div className="flex gap-2">
+              {sceneMeta.aspect && <AppBadge>{sceneMeta.aspect}</AppBadge>}
+              {sceneMeta.qualityPreset && <AppBadge variant="success">{sceneMeta.qualityPreset}</AppBadge>}
+            </div>
+          )}
+
+          <AppButton onClick={handleGenerate} disabled={!canGenerate || status === "running"}>
+            {status === "running" ? "Generating..." : "Generate front & back"}
+          </AppButton>
+          {error && <p className="text-xs text-rose-300">{error}</p>}
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-sm text-slate-300">Preview & History</p>
+          <AppTabs
+            tabs={[
+              {
+                key: "front",
+                label: "Front images",
+                content: (
+                  <div className="grid grid-cols-2 gap-3">
+                    {(currentGen?.frontImages ?? []).map((url, idx) => (
+                      <Thumb key={idx} src={url} alt={`front-${idx}`} size="md" />
+                    ))}
+                    {currentGen?.generatedImages
+                      ?.filter((i) => i.viewType === "FRONT")
+                      .map((i) => <Thumb key={i.id} src={i.imageUrl} alt="front" size="md" />)}
+                    {(currentGen?.frontImages?.length ?? 0) === 0 && (
+                      <p className="text-xs text-slate-400">No front images yet.</p>
+                    )}
+                  </div>
+                )
+              },
+              {
+                key: "back",
+                label: "Back images",
+                content: (
+                  <div className="grid grid-cols-2 gap-3">
+                    {(currentGen?.backImages ?? []).map((url, idx) => (
+                      <Thumb key={idx} src={url} alt={`back-${idx}`} size="md" />
+                    ))}
+                    {currentGen?.generatedImages
+                      ?.filter((i) => i.viewType === "BACK")
+                      .map((i) => <Thumb key={i.id} src={i.imageUrl} alt="back" size="md" />)}
+                    {(currentGen?.backImages?.length ?? 0) === 0 && (
+                      <p className="text-xs text-slate-400">No back images yet.</p>
+                    )}
+                  </div>
+                )
+              }
+            ]}
+          />
+        </div>
+      </div>
+    </AppCard>
+  );
+}
+

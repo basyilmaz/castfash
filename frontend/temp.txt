@@ -1,0 +1,169 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AppShell } from "../../../components/AppShell";
+import { AuthGuard } from "../../../components/AuthGuard";
+import { authStorage } from "../../../lib/storage";
+import { createProduct, getCategories, uploadFile } from "../../../lib/api";
+import { ProductCategory } from "../../../types";
+
+export default function NewProductPage() {
+  const router = useRouter();
+  const token = useMemo(() => authStorage.token(), []);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [form, setForm] = useState({ name: "", categoryId: "", sku: "", productImageUrl: "" });
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [showAdvancedUrl, setShowAdvancedUrl] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    getCategories(token)
+      .then(setCategories)
+      .catch((err) => setError(err.message || "Kategori yüklenemedi"));
+  }, [token]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const { url } = await uploadFile(token, file);
+      setForm((prev) => ({ ...prev, productImageUrl: url }));
+      setPreview(url);
+    } catch (err: any) {
+      setError(err.message || "Upload başarısız");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!token) return;
+    if (!form.name || !form.productImageUrl || !form.categoryId) {
+      setError("Please add product name, category and reference image (upload or paste URL).");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const created = await createProduct(token, {
+        name: form.name,
+        categoryId: Number(form.categoryId),
+        sku: form.sku || undefined,
+        productImageUrl: form.productImageUrl,
+      });
+      router.push(`/products/${created.id}`);
+    } catch (err: any) {
+      if (err.message?.includes("productImageUrl")) {
+        setError("Product image URL is invalid. Please upload again or paste a full URL with http/https.");
+      } else {
+        setError(err.message || "Ürün oluşturulamadı");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AuthGuard>
+      <AppShell>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+            <h1 className="text-2xl font-semibold">Yeni Ürün</h1>
+            <p className="text-sm text-slate-300">
+              Bikini referans görselini yükle, model çekimlerini ürün detay sayfasından üretebilirsin.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-6">
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold">1. Ürün Bilgisi</h2>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-slate-300">Product name</label>
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:outline-none focus:border-white/40"
+                    placeholder="Bikini Summer 2025"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-300">Category</label>
+                  <select
+                    value={form.categoryId}
+                    onChange={(e) => setForm((p) => ({ ...p, categoryId: e.target.value }))}
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:outline-none focus:border-white/40"
+                  >
+                    <option value="">Kategori seç</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-slate-300">SKU (optional)</label>
+                  <input
+                    value={form.sku}
+                    onChange={(e) => setForm((p) => ({ ...p, sku: e.target.value }))}
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:outline-none focus:border-white/40"
+                    placeholder="SKU-123"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold">2. Referans Bikini Görseli</h2>
+              <div className="rounded-xl border border-dashed border-white/20 bg-white/5 p-4 flex flex-col gap-3 items-start">
+                <p className="text-sm text-slate-300">Bu görsel AI tarafından sadece referans olarak kullanılır.</p>
+                <input type="file" accept="image/*" onChange={handleFileChange} disabled={uploading} />
+                {uploading && <p className="text-xs text-slate-300">Yükleniyor...</p>}
+                {preview && (
+                  <img src={preview} alt="preview" className="max-h-48 rounded-lg border border-white/10 object-cover" />
+                )}
+                <p className="text-xs text-slate-400">
+                  This image is only used as a reference. The AI will copy the bikini pattern, logo and colors from here when
+                  generating model shots.
+                </p>
+                <button
+                  className="text-xs text-cyan-200 underline"
+                  onClick={() => setShowAdvancedUrl((v) => !v)}
+                  type="button"
+                >
+                  {showAdvancedUrl ? "Hide" : "Or paste an existing image URL"}
+                </button>
+                {showAdvancedUrl && (
+                  <input
+                    value={form.productImageUrl}
+                    onChange={(e) => setForm((p) => ({ ...p, productImageUrl: e.target.value }))}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm focus:outline-none focus:border-white/40"
+                    placeholder="https://..."
+                  />
+                )}
+              </div>
+            </div>
+
+            {error && <p className="text-sm text-rose-300">{error}</p>}
+            <button
+              onClick={handleSubmit}
+              disabled={saving}
+              className="rounded-xl bg-white text-slate-900 px-5 py-3 font-semibold hover:shadow-lg transition disabled:opacity-50"
+            >
+              {saving ? "Kaydediliyor..." : "Ürünü Kaydet"}
+            </button>
+          </div>
+        </div>
+      </AppShell>
+    </AuthGuard>
+  );
+}

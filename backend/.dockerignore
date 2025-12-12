@@ -1,0 +1,45 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+logs/
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+
+# Test
+coverage/
+.nyc_output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (handled via volume)
+uploads/*
+!uploads/.gitkeep
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Debug
+debug/
+
+# Docker
+Dockerfile
+docker-compose*.yml
