@@ -88,6 +88,7 @@ export class KieImageProvider implements AiImageProvider {
     apiKey: string,
     modelId: string,
     prompt: string,
+    negativePrompt: string | undefined,
     imageInputs: string[],
     aspectRatio: string,
     resolution: string,
@@ -97,6 +98,7 @@ export class KieImageProvider implements AiImageProvider {
       model: modelId,
       input: {
         prompt,
+        negative_prompt: negativePrompt || 'ugly, disfigured, blurry, low quality, extra limbs, bad anatomy',
         image_input: imageInputs || [],
         aspect_ratio: aspectRatio,
         resolution: resolution,
@@ -104,7 +106,8 @@ export class KieImageProvider implements AiImageProvider {
       },
     };
 
-    this.logger.debug(`KIE createTask payload: ${JSON.stringify(payload).slice(0, 500)}`);
+    this.logger.debug(`KIE createTask payload (prompt slice): ${JSON.stringify({ model: payload.model, inputKeysCount: Object.keys(payload.input).length, imageInputCount: imageInputs.length })}`);
+    this.logger.debug(`KIE image_input URLs: ${JSON.stringify(imageInputs)}`);
 
     const response = await axios.post<KieTaskResponse>(
       this.CREATE_TASK_URL,
@@ -195,6 +198,7 @@ export class KieImageProvider implements AiImageProvider {
 
     const {
       prompt,
+      negativePrompt,
       aspectRatio = '9:16',
       resolution = '1K',
       imageInputs = [],
@@ -219,6 +223,7 @@ export class KieImageProvider implements AiImageProvider {
         apiKey,
         modelId,
         prompt,
+        negativePrompt,
         imageInputs,
         kieAspectRatio,
         kieResolution,

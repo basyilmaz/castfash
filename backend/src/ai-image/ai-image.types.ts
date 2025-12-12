@@ -2,6 +2,7 @@ import { AiProviderType } from '@prisma/client';
 
 export interface AiImageGenerateOptions {
   prompt: string;
+  negativePrompt?: string;
   aspectRatio?: string;
   resolution?: string;
   imageInputs?: string[];
