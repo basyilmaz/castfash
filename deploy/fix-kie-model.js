@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 async function updateKieModel() {
     const result = await prisma.aiProviderConfig.updateMany({
         where: { provider: 'KIE' },
-        data: { modelId: 'google/nano-banana-pro' }
+        data: { modelId: 'google/nano-banana' }
     });
     console.log('Updated KIE providers:', result.count);
 }
