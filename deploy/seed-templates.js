@@ -5,48 +5,53 @@ async function seedTemplates() {
     const templates = [
         {
             name: 'Fashion Product Shot',
-            description: 'Standard fashion product photography template',
-            category: 'fashion',
-            template: 'A professional fashion photograph of {product} worn by {model}, {scene}, {lighting}, {style}',
-            variables: ['product', 'model', 'scene', 'lighting', 'style'],
+            type: 'MASTER',
+            category: 'PRODUCT',
+            content: 'A professional fashion photograph of {product} worn by {model}, {scene}, {lighting}, {style}',
+            variables: { keys: ['product', 'model', 'scene', 'lighting', 'style'] },
             isActive: true,
-            isGlobal: true
+            priority: 1,
+            tags: ['fashion', 'product']
         },
         {
             name: 'E-commerce White Background',
-            description: 'Clean e-commerce product shot on white background',
-            category: 'ecommerce',
-            template: '{product} on pure white background, professional product photography, studio lighting, high detail, commercial quality',
-            variables: ['product'],
+            type: 'SCENE',
+            category: 'BACKGROUND',
+            content: '{product} on pure white background, professional product photography, studio lighting, high detail, commercial quality',
+            variables: { keys: ['product'] },
             isActive: true,
-            isGlobal: true
+            priority: 2,
+            tags: ['ecommerce', 'white']
         },
         {
             name: 'Lifestyle Fashion',
-            description: 'Lifestyle fashion photography in natural setting',
-            category: 'lifestyle',
-            template: '{model} wearing {product} in {scene}, natural lighting, lifestyle photography, candid moment, editorial style',
-            variables: ['model', 'product', 'scene'],
+            type: 'MASTER',
+            category: 'GENERAL',
+            content: '{model} wearing {product} in {scene}, natural lighting, lifestyle photography, candid moment, editorial style',
+            variables: { keys: ['model', 'product', 'scene'] },
             isActive: true,
-            isGlobal: true
+            priority: 3,
+            tags: ['lifestyle', 'casual']
         },
         {
             name: 'Luxury Brand',
-            description: 'High-end luxury brand aesthetic',
-            category: 'luxury',
-            template: 'Luxurious {product} photographed in {scene}, {model} with elegant pose, dramatic lighting, high fashion editorial, Vogue style',
-            variables: ['product', 'scene', 'model'],
+            type: 'MASTER',
+            category: 'QUALITY',
+            content: 'Luxurious {product} photographed in {scene}, {model} with elegant pose, dramatic lighting, high fashion editorial, Vogue style',
+            variables: { keys: ['product', 'scene', 'model'] },
             isActive: true,
-            isGlobal: true
+            priority: 4,
+            tags: ['luxury', 'highend']
         },
         {
-            name: 'Streetwear Urban',
-            description: 'Urban streetwear style photography',
-            category: 'streetwear',
-            template: '{model} in {product}, urban city background, street style photography, dynamic pose, natural daylight, contemporary fashion',
-            variables: ['model', 'product'],
+            name: 'Model Pose Guide',
+            type: 'POSE',
+            category: 'MODEL',
+            content: '{model} in {product}, confident pose, looking at camera, professional modeling, fashion catalog style',
+            variables: { keys: ['model', 'product'] },
             isActive: true,
-            isGlobal: true
+            priority: 5,
+            tags: ['model', 'pose']
         }
     ];
 
@@ -57,12 +62,13 @@ async function seedTemplates() {
             update: {},
             create: {
                 name: t.name,
-                description: t.description,
+                type: t.type,
                 category: t.category,
-                template: t.template,
+                content: t.content,
                 variables: t.variables,
                 isActive: t.isActive,
-                isGlobal: t.isGlobal
+                priority: t.priority,
+                tags: t.tags
             }
         });
         console.log('Template created:', t.name);
