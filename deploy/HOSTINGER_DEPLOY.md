@@ -73,7 +73,7 @@ scp -r ./* root@31.220.111.123:/opt/castfash/
 
 ```bash
 cd /opt/castfash
-git clone https://github.com/your-repo/castfash.git .
+git clone https://github.com/basyilmaz/castfash.git .
 ```
 
 ---
