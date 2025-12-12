@@ -133,16 +133,30 @@ function buildPoseDescriptor(view: 'FRONT' | 'BACK', config?: {
 }): string {
   const parts: string[] = [];
 
+  // Camera Angle
+  if (config?.cameraAngle) {
+    const angles: Record<string, string> = {
+      'eye_level': 'eye level camera angle',
+      'low_angle': 'low angle shot looking up at the model',
+      'high_angle': 'high angle shot looking down at the model',
+      'side_profile': 'side profile view of the model',
+    };
+    parts.push(angles[config.cameraAngle] || config.cameraAngle);
+  }
+
+  // View direction
   if (view === 'FRONT') {
-    parts.push('front facing view');
-    parts.push('model looking at camera');
-    parts.push('confident standing pose');
+    if (config?.cameraAngle !== 'side_profile') {
+      parts.push('front facing view');
+      parts.push('model looking at camera');
+    }
   } else {
     parts.push('back view');
     parts.push('camera behind the model');
     parts.push('showing full back of the garment');
   }
 
+  // Model Pose
   if (config?.modelPose) {
     const poses: Record<string, string> = {
       'standing': 'natural standing pose',
@@ -151,14 +165,17 @@ function buildPoseDescriptor(view: 'FRONT' | 'BACK', config?: {
       'leaning': 'leaning pose',
     };
     parts.push(poses[config.modelPose] || config.modelPose);
+  } else {
+    parts.push('confident standing pose');
   }
 
+  // Shot Type
   if (config?.shotType) {
     const shots: Record<string, string> = {
-      'full_body': 'full body shot',
-      'knee_shot': 'three quarter body shot',
-      'waist_up': 'waist up shot',
-      'close_up': 'close up shot',
+      'full_body': 'full body shot showing entire figure',
+      'knee_shot': 'three quarter body shot from knees up',
+      'waist_up': 'waist up medium shot',
+      'close_up': 'close up portrait shot',
     };
     parts.push(shots[config.shotType] || 'full body shot');
   } else {
