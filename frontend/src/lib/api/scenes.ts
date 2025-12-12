@@ -29,16 +29,46 @@ export async function getScene(id: string): Promise<ScenePreset> {
 }
 
 export async function createScene(data: UpsertSceneInput): Promise<ScenePreset> {
+  const formData = new FormData();
+
+  formData.append("name", data.name);
+  if (data.type) formData.append("type", data.type);
+  if (data.backgroundReferenceUrl) formData.append("backgroundReferenceUrl", data.backgroundReferenceUrl);
+  if (data.solidColorHex) formData.append("solidColorHex", data.solidColorHex);
+  if (data.backgroundPrompt) formData.append("backgroundPrompt", data.backgroundPrompt);
+  if (data.lighting) formData.append("lighting", data.lighting);
+  if (data.mood) formData.append("mood", data.mood);
+  if (data.suggestedAspectRatio) formData.append("suggestedAspectRatio", data.suggestedAspectRatio);
+  if (data.qualityPreset) formData.append("qualityPreset", data.qualityPreset);
+  if (data.category) formData.append("category", data.category);
+  if (data.tags) formData.append("tags", data.tags);
+  if (data.file) formData.append("file", data.file);
+
   return apiFetch<ScenePreset>("/scenes", {
     method: "POST",
-    body: data,
+    body: formData,
   });
 }
 
 export async function updateScene(id: string, data: UpsertSceneInput): Promise<ScenePreset> {
+  const formData = new FormData();
+
+  formData.append("name", data.name);
+  if (data.type) formData.append("type", data.type);
+  if (data.backgroundReferenceUrl) formData.append("backgroundReferenceUrl", data.backgroundReferenceUrl);
+  if (data.solidColorHex) formData.append("solidColorHex", data.solidColorHex);
+  if (data.backgroundPrompt) formData.append("backgroundPrompt", data.backgroundPrompt);
+  if (data.lighting) formData.append("lighting", data.lighting);
+  if (data.mood) formData.append("mood", data.mood);
+  if (data.suggestedAspectRatio) formData.append("suggestedAspectRatio", data.suggestedAspectRatio);
+  if (data.qualityPreset) formData.append("qualityPreset", data.qualityPreset);
+  if (data.category) formData.append("category", data.category);
+  if (data.tags) formData.append("tags", data.tags);
+  if (data.file) formData.append("file", data.file);
+
   return apiFetch<ScenePreset>(`/scenes/${id}`, {
     method: "PUT",
-    body: data,
+    body: formData,
   });
 }
 
