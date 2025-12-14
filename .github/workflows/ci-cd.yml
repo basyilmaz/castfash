@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline - Railway Deployment
 
 on:
   push:
@@ -11,7 +11,7 @@ env:
 
 jobs:
   # ===========================================
-  # Backend Tests
+  # Backend Tests & Lint
   # ===========================================
   backend-test:
     name: Backend Tests
@@ -59,10 +59,12 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost:5432/castfash_test?schema=public
       
       - name: Run linting
-        run: npm run lint || true
+        run: npm run lint
+        continue-on-error: true
       
       - name: Run tests
-        run: npm test || true
+        run: npm test
+        continue-on-error: true
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/castfash_test?schema=public
           JWT_SECRET: test-secret-for-ci-pipeline-minimum-32-chars
@@ -72,7 +74,7 @@ jobs:
         run: npm run build
 
   # ===========================================
-  # Frontend Tests
+  # Frontend Tests & Lint
   # ===========================================
   frontend-test:
     name: Frontend Tests
@@ -97,55 +99,21 @@ jobs:
         run: npm ci
       
       - name: Run linting
-        run: npm run lint || true
+        run: npm run lint
+        continue-on-error: true
       
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:3002
+          NEXT_PUBLIC_API_URL: https://api.castfash.com
 
   # ===========================================
-  # Docker Build Test
-  # ===========================================
-  docker-build:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test]
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Build Backend Image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: false
-          tags: castfash-backend:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      
-      - name: Build Frontend Image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: false
-          tags: castfash-frontend:test
-          build-args: |
-            NEXT_PUBLIC_API_URL=http://localhost:3002
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ===========================================
-  # Deploy to Staging (on develop branch)
+  # Deploy to Railway (Staging - develop branch)
   # ===========================================
   deploy-staging:
-    name: Deploy to Staging
+    name: Deploy to Staging (Railway)
     runs-on: ubuntu-latest
-    needs: [docker-build]
+    needs: [backend-test, frontend-test]
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     environment: staging
     
@@ -153,19 +121,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Deploy to Staging
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      
+      - name: Deploy Backend to Railway Staging
+        run: railway up --service backend --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+        working-directory: ./backend
+        continue-on-error: true
+      
+      - name: Deploy Frontend to Railway Staging
+        run: railway up --service frontend --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+        working-directory: ./frontend
+        continue-on-error: true
+      
+      - name: Staging Deployment Notification
         run: |
-          echo "Deploying to staging environment..."
-          # Add your deployment commands here
-          # Example: SSH to server and pull latest, or push to container registry
+          echo "🚀 Staging deployment triggered for commit ${{ github.sha }}"
+          echo "Branch: develop"
+          echo "Commit message: ${{ github.event.head_commit.message }}"
 
   # ===========================================
-  # Deploy to Production (on main branch)
+  # Deploy to Railway (Production - main branch)
   # ===========================================
   deploy-production:
-    name: Deploy to Production
+    name: Deploy to Production (Railway)
     runs-on: ubuntu-latest
-    needs: [docker-build]
+    needs: [backend-test, frontend-test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     
@@ -173,37 +158,75 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Login to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.REGISTRY_URL }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-        if: ${{ secrets.REGISTRY_URL != '' }}
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
       
-      - name: Build and Push Backend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: |
-            ${{ secrets.REGISTRY_URL }}/castfash-backend:${{ github.sha }}
-            ${{ secrets.REGISTRY_URL }}/castfash-backend:latest
-        if: ${{ secrets.REGISTRY_URL != '' }}
+      - name: Deploy Backend to Railway Production
+        run: railway up --service backend --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
+        working-directory: ./backend
       
-      - name: Build and Push Frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: |
-            ${{ secrets.REGISTRY_URL }}/castfash-frontend:${{ github.sha }}
-            ${{ secrets.REGISTRY_URL }}/castfash-frontend:latest
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.PRODUCTION_API_URL }}
-        if: ${{ secrets.REGISTRY_URL != '' }}
+      - name: Deploy Frontend to Railway Production
+        run: railway up --service frontend --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
+        working-directory: ./frontend
       
-      - name: Deploy Notification
+      - name: Production Deployment Notification
         run: |
-          echo "Production deployment triggered for commit ${{ github.sha }}"
-          # Add notification (Slack, Discord, etc.)
+          echo "🚀 Production deployment triggered for commit ${{ github.sha }}"
+          echo "Branch: main"
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+
+  # ===========================================
+  # Create Release Tag (on main branch)
+  # ===========================================
+  create-release:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get version from VERSION file
+        id: version
+        run: echo "VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+      
+      - name: Check if tag exists
+        id: tag_check
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.VERSION }}" >/dev/null 2>&1; then
+            echo "TAG_EXISTS=true" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create Git Tag
+        if: steps.tag_check.outputs.TAG_EXISTS == 'false'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag -a "v${{ steps.version.outputs.VERSION }}" -m "Release v${{ steps.version.outputs.VERSION }}"
+          git push origin "v${{ steps.version.outputs.VERSION }}"
+
+  # ===========================================
+  # Notify on Failure
+  # ===========================================
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+    if: failure()
+    
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "❌ Pipeline failed for commit ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Check the logs for details"

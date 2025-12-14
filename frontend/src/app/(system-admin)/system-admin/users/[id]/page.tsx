@@ -13,6 +13,8 @@ interface UserDetail {
     id: number;
     email: string;
     isSuperAdmin: boolean;
+    isActive?: boolean;
+    isVerified?: boolean;
     createdAt: string;
     organizations: Array<{
         role: string;
@@ -64,6 +66,7 @@ export default function UserDetailPage() {
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [suspending, setSuspending] = useState(false);
 
     // Edit form state
     const [email, setEmail] = useState("");
@@ -178,6 +181,29 @@ export default function UserDetailPage() {
         }
     }
 
+    async function handleToggleSuspend() {
+        const action = user?.isActive !== false ? "askıya almak" : "aktifleştirmek";
+        if (!confirm(`Bu kullanıcıyı ${action} istediğinizden emin misiniz?`)) {
+            return;
+        }
+
+        try {
+            setSuspending(true);
+            const newStatus = user?.isActive === false;
+            await apiFetch(`/system-admin/users/${userId}`, {
+                method: "PUT",
+                body: JSON.stringify({ isActive: newStatus }),
+            });
+            toast.success(newStatus ? "Kullanıcı aktifleştirildi!" : "Kullanıcı askıya alındı!");
+            await loadUserDetail();
+        } catch (err) {
+            console.error("Failed to toggle suspend", err);
+            toast.error("İşlem başarısız!");
+        } finally {
+            setSuspending(false);
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -233,6 +259,14 @@ export default function UserDetailPage() {
                                 onClick={() => setShowPasswordReset(true)}
                             >
                                 🔑 Şifre Sıfırla
+                            </AppButton>
+                            <AppButton
+                                variant="outline"
+                                onClick={handleToggleSuspend}
+                                loading={suspending}
+                                className={user.isActive !== false ? "border-yellow-500 text-yellow-500" : "border-green-500 text-green-500"}
+                            >
+                                {user.isActive !== false ? "⏸️ Askıya Al" : "▶️ Aktifleştir"}
                             </AppButton>
                             <AppButton
                                 variant="danger"

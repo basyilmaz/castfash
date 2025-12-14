@@ -7,6 +7,7 @@ import { getCurrentOrganization } from "@/lib/api/auth";
 import { I18nProvider } from "@/lib/i18n";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { WelcomeModal, OnboardingTour } from "@/components/onboarding";
+import { MobileSidebar, MobileBottomNav } from "@/components/layout/MobileSidebar";
 
 type AdminLink = {
   label: string;
@@ -78,6 +79,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <I18nProvider>
       <OnboardingProvider>
         <div className="flex min-h-screen bg-page text-white">
+          {/* Mobile Navigation */}
+          <MobileSidebar />
+
           <aside className="hidden w-64 border-r border-border bg-surface flex flex-col md:flex">
             {/* Logo */}
             <div className="px-5 py-4 border-b border-border">
@@ -163,8 +167,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             </header>
 
-            <main className="flex-1 bg-page px-6 py-6 overflow-auto">{children}</main>
+            <main className="flex-1 bg-page px-4 md:px-6 py-6 pb-24 md:pb-6 overflow-auto">{children}</main>
           </div>
+
+          {/* Mobile Bottom Navigation */}
+          <MobileBottomNav />
         </div>
 
         {/* Onboarding Components */}

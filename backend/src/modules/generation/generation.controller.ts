@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { GenerationService } from './generation.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -16,12 +17,18 @@ import { RequestUser } from '../../common/types/request-user.interface';
 import { GenerateRequestDto } from './dto/generate-request.dto';
 import { BatchGenerateDto } from './dto/batch-generate.dto';
 
+@ApiTags('Generation')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller()
 export class GenerationController {
-  constructor(private readonly generationService: GenerationService) {}
+  constructor(private readonly generationService: GenerationService) { }
 
   @Post('products/:productId/generate')
+  @ApiOperation({ summary: 'Generate AI images for a product' })
+  @ApiParam({ name: 'productId', description: 'Product ID' })
+  @ApiResponse({ status: 201, description: 'Generation started successfully' })
+  @ApiResponse({ status: 400, description: 'Insufficient credits or invalid input' })
   @Throttle({
     short: { limit: 2, ttl: 1000 },
     medium: { limit: 10, ttl: 60000 },

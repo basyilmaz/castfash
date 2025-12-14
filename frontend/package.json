@@ -1,6 +1,22 @@
 {
-  "name": "frontend",
-  "version": "1.0.0",
+  "name": "@castintech/castfash-frontend",
+  "version": "0.1.0",
+  "description": "CastFash Frontend - AI-powered fashion catalog visual generation platform by CastinTech",
+  "author": "CastinTech <info@castintech.com>",
+  "license": "MIT",
+  "homepage": "https://castfash.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/castintech/castfash.git"
+  },
+  "keywords": [
+    "ai",
+    "fashion",
+    "catalog",
+    "nextjs",
+    "react",
+    "castintech"
+  ],
   "private": true,
   "scripts": {
     "dev": "next dev -p 3003",

@@ -15,6 +15,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
@@ -41,10 +42,12 @@ function generateFilename(originalName: string) {
   return `${unique}${ext}`;
 }
 
+@ApiTags('Scenes')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('scenes')
 export class ScenesController {
-  constructor(private readonly scenesService: ScenesService) {}
+  constructor(private readonly scenesService: ScenesService) { }
 
   @Get()
   findAll(

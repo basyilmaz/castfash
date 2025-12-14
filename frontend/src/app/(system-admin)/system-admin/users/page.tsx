@@ -37,6 +37,10 @@ export default function UsersPage() {
     const [pageSize] = useState(20);
     const [showCreateModal, setShowCreateModal] = useState(false);
 
+    // Bulk selection
+    const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+
     // Create user form
     const [newEmail, setNewEmail] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -175,6 +179,60 @@ export default function UsersPage() {
         toast.success("Kullanıcılar dışa aktarıldı!");
     }
 
+    function toggleSelectUser(userId: number) {
+        setSelectedUsers(prev =>
+            prev.includes(userId)
+                ? prev.filter(id => id !== userId)
+                : [...prev, userId]
+        );
+    }
+
+    function toggleSelectAll() {
+        if (selectedUsers.length === users.length) {
+            setSelectedUsers([]);
+        } else {
+            setSelectedUsers(users.map(u => u.id));
+        }
+    }
+
+    async function handleBulkDelete() {
+        if (selectedUsers.length === 0) {
+            toast.error("Lütfen en az bir kullanıcı seçin");
+            return;
+        }
+
+        if (!confirm(`${selectedUsers.length} kullanıcıyı silmek istediğinizden emin misiniz?`)) {
+            return;
+        }
+
+        try {
+            setBulkDeleting(true);
+
+            // Delete each selected user
+            const deletePromises = selectedUsers.map(userId =>
+                apiFetch(`/system-admin/users/${userId}/delete`, { method: "POST" })
+                    .catch(err => ({ error: true, userId, message: err.message }))
+            );
+
+            const results = await Promise.all(deletePromises);
+            const errors = results.filter((r: any) => r?.error);
+
+            if (errors.length > 0) {
+                toast.warning(`${selectedUsers.length - errors.length} kullanıcı silindi, ${errors.length} başarısız`);
+            } else {
+                toast.success(`${selectedUsers.length} kullanıcı başarıyla silindi!`);
+            }
+
+            setSelectedUsers([]);
+            loadUsers();
+        } catch (err) {
+            console.error("Bulk delete failed", err);
+            toast.error("Toplu silme işlemi başarısız!");
+        } finally {
+            setBulkDeleting(false);
+        }
+    }
+
     const totalPages = Math.ceil(total / pageSize);
 
     return (
@@ -183,9 +241,23 @@ export default function UsersPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold mb-2">Kullanıcı Yönetimi</h1>
-                    <p className="text-textMuted">Toplam {total} kullanıcı</p>
+                    <p className="text-textMuted">
+                        Toplam {total} kullanıcı
+                        {selectedUsers.length > 0 && (
+                            <span className="ml-2 text-primary">• {selectedUsers.length} seçili</span>
+                        )}
+                    </p>
                 </div>
                 <div className="flex gap-3">
+                    {selectedUsers.length > 0 && (
+                        <AppButton
+                            variant="danger"
+                            onClick={handleBulkDelete}
+                            loading={bulkDeleting}
+                        >
+                            🗑️ Seçilenleri Sil ({selectedUsers.length})
+                        </AppButton>
+                    )}
                     <AppButton variant="outline" onClick={exportUsers}>
                         📥 Dışa Aktar
                     </AppButton>
@@ -273,15 +345,45 @@ export default function UsersPage() {
                 <div className="text-textMuted text-center py-8">Yükleniyor...</div>
             ) : (
                 <>
+                    {/* Select All Header */}
+                    {users.length > 0 && (
+                        <div className="flex items-center gap-3 p-3 bg-surface rounded-lg border border-border">
+                            <input
+                                type="checkbox"
+                                checked={selectedUsers.length === users.length && users.length > 0}
+                                onChange={toggleSelectAll}
+                                className="w-5 h-5 rounded border-border bg-card text-primary focus:ring-2 focus:ring-primary cursor-pointer"
+                            />
+                            <span className="text-sm text-textMuted">
+                                {selectedUsers.length === users.length
+                                    ? "Tüm seçimi kaldır"
+                                    : `Tümünü seç (${users.length})`}
+                            </span>
+                        </div>
+                    )}
+
                     <div className="space-y-4">
                         {users.map((user) => (
                             <AppCard
                                 key={user.id}
-                                className="p-6 cursor-pointer hover:border-primary transition-colors"
-                                onClick={() => router.push(`/system-admin/users/${user.id}`)}
+                                className={`p-6 transition-colors ${selectedUsers.includes(user.id) ? 'border-primary bg-primary/5' : 'hover:border-primary'}`}
                             >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
+                                <div className="flex items-start gap-4">
+                                    {/* Checkbox */}
+                                    <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedUsers.includes(user.id)}
+                                            onChange={() => toggleSelectUser(user.id)}
+                                            className="w-5 h-5 rounded border-border bg-card text-primary focus:ring-2 focus:ring-primary cursor-pointer"
+                                        />
+                                    </div>
+
+                                    {/* User Info - Clickable */}
+                                    <div
+                                        className="flex-1 cursor-pointer"
+                                        onClick={() => router.push(`/system-admin/users/${user.id}`)}
+                                    >
                                         <div className="flex items-center gap-3 mb-2">
                                             <h3 className="text-lg font-semibold">{user.email}</h3>
                                             {user.isSuperAdmin && (

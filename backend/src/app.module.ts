@@ -29,6 +29,9 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { BatchModule } from './modules/batch/batch.module';
 import { InvoiceModule } from './modules/billing/invoice.module';
 import { ProductVariantModule } from './modules/product-variant/product-variant.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { CacheModule } from './common/cache';
+import { ImageModule } from './common/image';
 
 @Module({
   imports: [
@@ -59,6 +62,8 @@ import { ProductVariantModule } from './modules/product-variant/product-variant.
       serveRoot: '/uploads',
     }),
     PrismaModule,
+    CacheModule, // Global cache service (memory/Redis)
+    ImageModule, // Global image processing service (Sharp)
     LoggerModule, // Global logger module
     EmailModule, // Global module - must be before AuthModule
     HealthModule,
@@ -80,6 +85,7 @@ import { ProductVariantModule } from './modules/product-variant/product-variant.
     BatchModule,
     InvoiceModule,
     ProductVariantModule,
+    PaymentModule, // Stripe payment integration
   ],
   providers: [
     // Apply throttler guard globally

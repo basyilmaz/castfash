@@ -3,7 +3,17 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AppButton } from "@/components/ui/AppButton";
-import { getPromptTemplates, getPromptPresets, updatePromptTemplate } from "@/lib/api/admin";
+import { AppCard } from "@/components/ui/AppCard";
+import { AppInput } from "@/components/ui/AppInput";
+import {
+    getPromptTemplates,
+    getPromptPresets,
+    updatePromptTemplate,
+    createPromptTemplate,
+    deletePromptTemplate,
+    createPromptPreset,
+    deletePromptPreset
+} from "@/lib/api/admin";
 
 interface PromptTemplate {
     id: number;
@@ -57,6 +67,19 @@ export default function PromptsPage() {
     const [activeTab, setActiveTab] = useState<'templates' | 'presets'>('templates');
     const [filterType, setFilterType] = useState<string>('all');
     const [editingTemplate, setEditingTemplate] = useState<PromptTemplate | null>(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [deleting, setDeleting] = useState<number | null>(null);
+
+    // New prompt form state
+    const [newPrompt, setNewPrompt] = useState({
+        name: '',
+        type: 'SCENE',
+        category: 'GENERAL',
+        content: '',
+        priority: 1,
+        tags: ''
+    });
 
     useEffect(() => {
         loadData();
@@ -107,6 +130,58 @@ export default function PromptsPage() {
         }
     }
 
+    async function createNewTemplate() {
+        if (!newPrompt.name || !newPrompt.content) {
+            toast.error("İsim ve içerik zorunludur");
+            return;
+        }
+
+        try {
+            setCreating(true);
+            await createPromptTemplate({
+                name: newPrompt.name,
+                type: newPrompt.type,
+                category: newPrompt.category,
+                content: newPrompt.content,
+                priority: newPrompt.priority,
+                tags: newPrompt.tags.split(',').map(t => t.trim()).filter(t => t),
+                isActive: true
+            });
+            toast.success('Yeni prompt oluşturuldu!');
+            setShowCreateModal(false);
+            setNewPrompt({
+                name: '',
+                type: 'SCENE',
+                category: 'GENERAL',
+                content: '',
+                priority: 1,
+                tags: ''
+            });
+            loadData();
+        } catch (err) {
+            toast.error("Oluşturma başarısız");
+        } finally {
+            setCreating(false);
+        }
+    }
+
+    async function handleDeleteTemplate(id: number) {
+        if (!confirm("Bu prompt'u silmek istediğinizden emin misiniz?")) {
+            return;
+        }
+
+        try {
+            setDeleting(id);
+            await deletePromptTemplate(id);
+            toast.success('Prompt silindi!');
+            loadData();
+        } catch (err) {
+            toast.error("Silme başarısız");
+        } finally {
+            setDeleting(null);
+        }
+    }
+
     const filteredTemplates = filterType === 'all'
         ? templates
         : templates.filter(t => t.type === filterType);
@@ -135,9 +210,21 @@ export default function PromptsPage() {
                     <h1 className="text-2xl font-bold">🎨 Master Prompt Ayarları</h1>
                     <p className="text-textMuted mt-1">AI görüntü üretimi için kullanılan prompt şablonlarını yönetin</p>
                 </div>
-                <AppButton onClick={() => toast.info("Yeni prompt ekleme yakında...")}>
-                    + Yeni Prompt Ekle
-                </AppButton>
+                <div className="flex gap-2">
+                    <a href="/system-admin/prompts/analytics">
+                        <AppButton variant="secondary">
+                            📊 Analytics
+                        </AppButton>
+                    </a>
+                    <a href="/system-admin/prompts/builder">
+                        <AppButton variant="secondary">
+                            🔧 Prompt Builder
+                        </AppButton>
+                    </a>
+                    <AppButton onClick={() => setShowCreateModal(true)}>
+                        + Yeni Prompt Ekle
+                    </AppButton>
+                </div>
             </div>
 
             {/* Stats */}
@@ -285,6 +372,13 @@ export default function PromptsPage() {
                                         >
                                             {template.isActive ? '🔴 Devre Dışı' : '🟢 Aktifleştir'}
                                         </button>
+                                        <button
+                                            onClick={() => handleDeleteTemplate(template.id)}
+                                            disabled={deleting === template.id}
+                                            className="px-3 py-1.5 rounded text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                        >
+                                            {deleting === template.id ? '⏳ Siliniyor...' : '🗑️ Sil'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -364,6 +458,124 @@ export default function PromptsPage() {
                             <div className="text-textMuted">Henüz hazır preset eklenmemiş.</div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Create New Prompt Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <AppCard className="w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-bold">➕ Yeni Prompt Oluştur</h2>
+                            <button
+                                onClick={() => setShowCreateModal(false)}
+                                className="text-xl text-textMuted hover:text-white"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Name */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1">İsim *</label>
+                                <input
+                                    type="text"
+                                    value={newPrompt.name}
+                                    onChange={(e) => setNewPrompt({ ...newPrompt, name: e.target.value })}
+                                    className="w-full bg-background border border-border rounded-lg p-3 outline-none focus:border-primary"
+                                    placeholder="Örn: Studio Lighting Setup"
+                                />
+                            </div>
+
+                            {/* Type & Category */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Tip *</label>
+                                    <select
+                                        value={newPrompt.type}
+                                        onChange={(e) => setNewPrompt({ ...newPrompt, type: e.target.value })}
+                                        className="w-full bg-background border border-border rounded-lg p-3 outline-none focus:border-primary"
+                                    >
+                                        {PROMPT_TYPES.map(type => (
+                                            <option key={type.value} value={type.value}>
+                                                {type.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Kategori</label>
+                                    <select
+                                        value={newPrompt.category}
+                                        onChange={(e) => setNewPrompt({ ...newPrompt, category: e.target.value })}
+                                        className="w-full bg-background border border-border rounded-lg p-3 outline-none focus:border-primary"
+                                    >
+                                        {CATEGORIES.map(cat => (
+                                            <option key={cat.value} value={cat.value}>
+                                                {cat.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1">İçerik *</label>
+                                <textarea
+                                    value={newPrompt.content}
+                                    onChange={(e) => setNewPrompt({ ...newPrompt, content: e.target.value })}
+                                    rows={6}
+                                    className="w-full bg-background border border-border rounded-lg p-3 font-mono text-sm outline-none focus:border-primary"
+                                    placeholder="Prompt içeriğini buraya yazın... Değişkenler için {{variableName}} formatını kullanabilirsiniz."
+                                />
+                            </div>
+
+                            {/* Priority & Tags */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Öncelik</label>
+                                    <input
+                                        type="number"
+                                        value={newPrompt.priority}
+                                        onChange={(e) => setNewPrompt({ ...newPrompt, priority: parseInt(e.target.value) || 1 })}
+                                        min={1}
+                                        max={100}
+                                        className="w-full bg-background border border-border rounded-lg p-3 outline-none focus:border-primary"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Etiketler (virgülle ayırın)</label>
+                                    <input
+                                        type="text"
+                                        value={newPrompt.tags}
+                                        onChange={(e) => setNewPrompt({ ...newPrompt, tags: e.target.value })}
+                                        className="w-full bg-background border border-border rounded-lg p-3 outline-none focus:border-primary"
+                                        placeholder="studio, professional, portrait"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-3 pt-4">
+                                <AppButton
+                                    onClick={createNewTemplate}
+                                    disabled={creating || !newPrompt.name || !newPrompt.content}
+                                    className="flex-1"
+                                >
+                                    {creating ? '⏳ Oluşturuluyor...' : '✅ Oluştur'}
+                                </AppButton>
+                                <AppButton
+                                    variant="secondary"
+                                    onClick={() => setShowCreateModal(false)}
+                                    className="flex-1"
+                                >
+                                    İptal
+                                </AppButton>
+                            </div>
+                        </div>
+                    </AppCard>
                 </div>
             )}
         </div>
