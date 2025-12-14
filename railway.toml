@@ -1,0 +1,11 @@
+# Railway Configuration for CastFash Monorepo
+# This file defines the multi-service deployment
+
+[build]
+builder = "NIXPACKS"
+
+# Note: For monorepo deployments, Railway requires you to add services
+# from the dashboard and set the root directory for each service.
+# This file provides default build/deploy settings.
+
+# Default settings applied to all services
