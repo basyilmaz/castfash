@@ -1,9 +1,9 @@
-# Production Dockerfile for Next.js
-FROM node:20-alpine
+# Production Dockerfile for Next.js with Standalone Output
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies (including devDependencies for build)
+# Install dependencies
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
@@ -17,12 +17,22 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 # Build
 RUN npm run build
 
+# Production stage
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
 # Set environment
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# Copy standalone build
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
 # Expose port
 EXPOSE 3000
 
-# Start
-CMD ["npm", "start"]
+# Start with standalone server
+CMD ["node", "server.js"]
