@@ -20,7 +20,12 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
-const ALLOWED_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+const ALLOWED_MIMETYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/jpg',
+];
 
 // Magic bytes signatures for file type verification
 const MAGIC_BYTES: Record<string, number[][]> = {

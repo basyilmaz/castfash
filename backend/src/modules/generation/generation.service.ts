@@ -24,7 +24,7 @@ export class GenerationService {
     private readonly prisma: PrismaService,
     private readonly aiImageService: AiImageService,
     private readonly creditsService: CreditsService,
-  ) { }
+  ) {}
 
   /**
    * Get token cost per image based on quality mode
@@ -284,7 +284,8 @@ export class GenerationService {
 
       if (errors.front || errors.back) {
         this.logger.warn(
-          `Generation completed with side errors: front=${errors.front ? 'failed' : 'ok'} back=${errors.back ? 'failed' : 'ok'
+          `Generation completed with side errors: front=${errors.front ? 'failed' : 'ok'} back=${
+            errors.back ? 'failed' : 'ok'
           }`,
         );
       }

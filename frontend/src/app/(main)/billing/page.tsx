@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -40,7 +39,7 @@ interface Invoice {
 }
 
 export default function BillingPage() {
-    const { token, organization } = useAuth();
+    const [token, setToken] = useState<string | null>(null);
     const [packages, setPackages] = useState<CreditPackage[]>([]);
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -50,7 +49,15 @@ export default function BillingPage() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
 
     useEffect(() => {
-        fetchBillingData();
+        // Get token from localStorage
+        const storedToken = localStorage.getItem('castfash_access_token');
+        setToken(storedToken);
+    }, []);
+
+    useEffect(() => {
+        if (token) {
+            fetchBillingData();
+        }
     }, [token]);
 
     const fetchBillingData = async () => {
@@ -188,8 +195,8 @@ export default function BillingPage() {
                         <div
                             key={pkg.id}
                             className={`bg-card rounded-xl p-6 border-2 relative ${pkg.popular
-                                    ? 'border-primary shadow-lg'
-                                    : 'border-border hover:border-primary/50'
+                                ? 'border-primary shadow-lg'
+                                : 'border-border hover:border-primary/50'
                                 } transition-all`}
                         >
                             {pkg.popular && (
@@ -220,8 +227,8 @@ export default function BillingPage() {
                                 onClick={() => handlePurchase(pkg.id)}
                                 disabled={purchasing !== null}
                                 className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${pkg.popular
-                                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
                                 {purchasing === pkg.id ? 'İşleniyor...' : 'Satın Al'}
@@ -262,8 +269,8 @@ export default function BillingPage() {
                                         <td className="px-6 py-4">
                                             <span
                                                 className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${invoice.status === 'paid'
-                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                                                     }`}
                                             >
                                                 {invoice.status === 'paid' ? 'Ödendi' : 'Bekliyor'}

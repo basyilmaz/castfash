@@ -14,7 +14,8 @@ export type BuildPromptResult = {
 const logger = new Logger('PromptBuilder');
 
 // Negative prompt for quality
-const DEFAULT_NEGATIVE_PROMPT = 'ugly, disfigured, blurry, low quality, wrong pattern, different colors, extra limbs, bad anatomy, text, watermark';
+const DEFAULT_NEGATIVE_PROMPT =
+  'ugly, disfigured, blurry, low quality, wrong pattern, different colors, extra limbs, bad anatomy, text, watermark';
 
 /**
  * Build a simple, clear prompt for fashion image generation.
@@ -32,7 +33,9 @@ export function buildPrompts(
     modelPose?: string;
   },
 ): BuildPromptResult {
-  logger.debug(`Building prompts for product=${product.id}, model=${model?.id ?? 'none'}, scene=${scene?.id ?? 'none'}`);
+  logger.debug(
+    `Building prompts for product=${product.id}, model=${model?.id ?? 'none'}, scene=${scene?.id ?? 'none'}`,
+  );
 
   const result: BuildPromptResult = {};
 
@@ -66,8 +69,12 @@ export function buildPrompts(
     negativePrompt: DEFAULT_NEGATIVE_PROMPT,
   };
 
-  logger.debug(`Front prompt (${frontPrompt.length} chars): ${frontPrompt.slice(0, 200)}...`);
-  logger.debug(`Back prompt (${backPrompt.length} chars): ${backPrompt.slice(0, 200)}...`);
+  logger.debug(
+    `Front prompt (${frontPrompt.length} chars): ${frontPrompt.slice(0, 200)}...`,
+  );
+  logger.debug(
+    `Back prompt (${backPrompt.length} chars): ${backPrompt.slice(0, 200)}...`,
+  );
 
   return result;
 }
@@ -90,8 +97,12 @@ function buildSinglePrompt(opts: {
 
   // 1. Core instruction - use the reference images
   parts.push('Generate a professional fashion catalog photo');
-  parts.push('Use the model from the reference images exactly - same face, body, skin tone, hair');
-  parts.push('Use the bikini/garment from the product reference image exactly - same pattern, colors, design');
+  parts.push(
+    'Use the model from the reference images exactly - same face, body, skin tone, hair',
+  );
+  parts.push(
+    'Use the bikini/garment from the product reference image exactly - same pattern, colors, design',
+  );
 
   if (scene?.backgroundReferenceUrl) {
     parts.push('Use the background from the scene reference image');
@@ -103,16 +114,18 @@ function buildSinglePrompt(opts: {
   if (view === 'FRONT') {
     parts.push('Front view of the model facing the camera');
   } else {
-    parts.push('Back view of the model, camera behind, showing the back of the garment');
+    parts.push(
+      'Back view of the model, camera behind, showing the back of the garment',
+    );
   }
 
   // 3. Camera angle
   if (cameraConfig?.cameraAngle) {
     const angles: Record<string, string> = {
-      'eye_level': 'Eye level camera angle',
-      'low_angle': 'Low angle shot, camera looking up',
-      'high_angle': 'High angle shot, camera looking down',
-      'side_profile': 'Side profile view',
+      eye_level: 'Eye level camera angle',
+      low_angle: 'Low angle shot, camera looking up',
+      high_angle: 'High angle shot, camera looking down',
+      side_profile: 'Side profile view',
     };
     if (angles[cameraConfig.cameraAngle]) {
       parts.push(angles[cameraConfig.cameraAngle]);
@@ -122,10 +135,10 @@ function buildSinglePrompt(opts: {
   // 4. Shot type
   if (cameraConfig?.shotType) {
     const shots: Record<string, string> = {
-      'full_body': 'Full body shot',
-      'knee_shot': 'Three quarter shot from knees up',
-      'waist_up': 'Medium shot from waist up',
-      'close_up': 'Close up portrait',
+      full_body: 'Full body shot',
+      knee_shot: 'Three quarter shot from knees up',
+      waist_up: 'Medium shot from waist up',
+      close_up: 'Close up portrait',
     };
     if (shots[cameraConfig.shotType]) {
       parts.push(shots[cameraConfig.shotType]);
@@ -137,10 +150,10 @@ function buildSinglePrompt(opts: {
   // 5. Pose
   if (cameraConfig?.modelPose) {
     const poses: Record<string, string> = {
-      'standing': 'Natural standing pose',
-      'walking': 'Walking pose',
-      'sitting': 'Sitting pose',
-      'leaning': 'Leaning pose',
+      standing: 'Natural standing pose',
+      walking: 'Walking pose',
+      sitting: 'Sitting pose',
+      leaning: 'Leaning pose',
     };
     if (poses[cameraConfig.modelPose]) {
       parts.push(poses[cameraConfig.modelPose]);
@@ -161,7 +174,9 @@ function buildSinglePrompt(opts: {
   }
 
   // 8. Quality tags
-  parts.push('Professional fashion photography, 4K, sharp focus, studio quality');
+  parts.push(
+    'Professional fashion photography, 4K, sharp focus, studio quality',
+  );
 
   return parts.join('. ') + '.';
 }

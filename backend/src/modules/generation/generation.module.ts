@@ -19,4 +19,4 @@ import { CreditsModule } from '../credits/credits.module';
   providers: [GenerationService, GenerationGateway],
   exports: [GenerationService, GenerationGateway],
 })
-export class GenerationModule { }
+export class GenerationModule {}

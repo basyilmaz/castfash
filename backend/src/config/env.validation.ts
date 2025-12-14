@@ -25,12 +25,18 @@ export const envSchema = z.object({
 
   JWT_ACCESS_EXPIRES: z
     .string()
-    .regex(/^\d+[smhdw]$/, 'JWT_ACCESS_EXPIRES must be in format like "1h", "30m", "7d"')
+    .regex(
+      /^\d+[smhdw]$/,
+      'JWT_ACCESS_EXPIRES must be in format like "1h", "30m", "7d"',
+    )
     .default('1h'),
 
   JWT_REFRESH_EXPIRES: z
     .string()
-    .regex(/^\d+[smhdw]$/, 'JWT_REFRESH_EXPIRES must be in format like "7d", "30d"')
+    .regex(
+      /^\d+[smhdw]$/,
+      'JWT_REFRESH_EXPIRES must be in format like "7d", "30d"',
+    )
     .default('7d'),
 
   // Legacy support
@@ -39,18 +45,13 @@ export const envSchema = z.object({
   // ==========================================================================
   // Server Configuration
   // ==========================================================================
-  PORT: z
-    .string()
-    .default('3002'),
+  PORT: z.string().default('3002'),
 
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
 
-  MODE: z
-    .enum(['development', 'production'])
-    .optional()
-    .default('development'),
+  MODE: z.enum(['development', 'production']).optional().default('development'),
 
   LOG_LEVEL: z
     .enum(['error', 'warn', 'info', 'debug', 'verbose'])
@@ -67,117 +68,67 @@ export const envSchema = z.object({
   // ==========================================================================
   // Email Configuration
   // ==========================================================================
-  EMAIL_HOST: z
-    .string()
-    .default(''),
+  EMAIL_HOST: z.string().default(''),
 
-  EMAIL_PORT: z
-    .string()
-    .default('587'),
+  EMAIL_PORT: z.string().default('587'),
 
-  EMAIL_SECURE: z
-    .string()
-    .default('false'),
+  EMAIL_SECURE: z.string().default('false'),
 
-  EMAIL_USER: z
-    .string()
-    .default(''),
+  EMAIL_USER: z.string().default(''),
 
-  EMAIL_PASSWORD: z
-    .string()
-    .default(''),
+  EMAIL_PASSWORD: z.string().default(''),
 
-  EMAIL_FROM: z
-    .string()
-    .default('CastFash <noreply@castfash.com>'),
+  EMAIL_FROM: z.string().default('CastFash <noreply@castfash.com>'),
 
   // ==========================================================================
   // AI Provider Configuration
   // ==========================================================================
-  AI_PROVIDER_KIE_ENABLED: z
-    .string()
-    .default('true'),
+  AI_PROVIDER_KIE_ENABLED: z.string().default('true'),
 
-  AI_PROVIDER_KIE_API_KEY: z
-    .string()
-    .optional()
-    .default(''),
+  AI_PROVIDER_KIE_API_KEY: z.string().optional().default(''),
 
-  AI_PROVIDER_KIE_BASE_URL: z
-    .string()
-    .optional()
-    .default(''),
+  AI_PROVIDER_KIE_BASE_URL: z.string().optional().default(''),
 
-  AI_PROVIDER_REPLICATE_ENABLED: z
-    .string()
-    .default('false'),
+  AI_PROVIDER_REPLICATE_ENABLED: z.string().default('false'),
 
-  AI_PROVIDER_REPLICATE_API_KEY: z
-    .string()
-    .optional()
-    .default(''),
+  AI_PROVIDER_REPLICATE_API_KEY: z.string().optional().default(''),
 
-  AI_PROVIDER_FAL_ENABLED: z
-    .string()
-    .default('false'),
+  AI_PROVIDER_FAL_ENABLED: z.string().default('false'),
 
-  AI_PROVIDER_FAL_API_KEY: z
-    .string()
-    .optional()
-    .default(''),
+  AI_PROVIDER_FAL_API_KEY: z.string().optional().default(''),
 
   // ==========================================================================
   // Rate Limiting Configuration
   // ==========================================================================
-  RATE_LIMIT_TTL: z
-    .string()
-    .default('60000'),
+  RATE_LIMIT_TTL: z.string().default('60000'),
 
-  RATE_LIMIT_LIMIT: z
-    .string()
-    .default('100'),
+  RATE_LIMIT_LIMIT: z.string().default('100'),
 
   // ==========================================================================
   // Optional: External URLs
   // ==========================================================================
-  APP_PUBLIC_URL: z
-    .string()
-    .url()
-    .optional(),
+  APP_PUBLIC_URL: z.string().url().optional(),
 
-  BASE_URL: z
-    .string()
-    .url()
-    .optional(),
+  BASE_URL: z.string().url().optional(),
 
   // ==========================================================================
   // Optional: Monitoring
   // ==========================================================================
-  SENTRY_DSN: z
-    .string()
-    .optional(),
+  SENTRY_DSN: z.string().optional(),
 
   // ==========================================================================
   // Optional: Stripe (for payment)
   // ==========================================================================
-  STRIPE_SECRET_KEY: z
-    .string()
-    .optional(),
+  STRIPE_SECRET_KEY: z.string().optional(),
 
-  STRIPE_WEBHOOK_SECRET: z
-    .string()
-    .optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 
-  STRIPE_PUBLISHABLE_KEY: z
-    .string()
-    .optional(),
+  STRIPE_PUBLISHABLE_KEY: z.string().optional(),
 
   // ==========================================================================
   // Optional: Redis (for caching/queue)
   // ==========================================================================
-  REDIS_URL: z
-    .string()
-    .optional(),
+  REDIS_URL: z.string().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -196,7 +147,10 @@ export function parseBoolean(value: string | undefined): boolean {
 /**
  * Parse integer from string
  */
-export function parseInt(value: string | undefined, defaultValue: number): number {
+export function parseInt(
+  value: string | undefined,
+  defaultValue: number,
+): number {
   const parsed = Number.parseInt(value || '', 10);
   return Number.isNaN(parsed) ? defaultValue : parsed;
 }
@@ -225,8 +179,13 @@ export const validateEnv = (config: Record<string, unknown>) => {
     const warnings: string[] = [];
 
     // Check JWT secret length
-    if (typeof config.JWT_SECRET === 'string' && config.JWT_SECRET.length < 64) {
-      warnings.push('JWT_SECRET should be at least 64 characters in production');
+    if (
+      typeof config.JWT_SECRET === 'string' &&
+      config.JWT_SECRET.length < 64
+    ) {
+      warnings.push(
+        'JWT_SECRET should be at least 64 characters in production',
+      );
     }
 
     // Check email configuration
@@ -238,12 +197,14 @@ export const validateEnv = (config: Record<string, unknown>) => {
     const kieEnabled = config.AI_PROVIDER_KIE_ENABLED === 'true';
     const kieKey = config.AI_PROVIDER_KIE_API_KEY;
     if (kieEnabled && !kieKey) {
-      warnings.push('AI_PROVIDER_KIE_ENABLED is true but AI_PROVIDER_KIE_API_KEY is not set');
+      warnings.push(
+        'AI_PROVIDER_KIE_ENABLED is true but AI_PROVIDER_KIE_API_KEY is not set',
+      );
     }
 
     if (warnings.length > 0) {
       console.warn('\n⚠️  Production Environment Warnings:\n');
-      warnings.forEach(w => console.warn(`  - ${w}`));
+      warnings.forEach((w) => console.warn(`  - ${w}`));
       console.warn('\n');
     }
   }

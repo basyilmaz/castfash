@@ -7,7 +7,7 @@ export class StatsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cacheService: CacheService,
-  ) { }
+  ) {}
 
   async getSummary(organizationId: number) {
     const cacheKey = CacheKeys.orgStats(organizationId);
@@ -15,18 +15,19 @@ export class StatsService {
     return this.cacheService.getOrSet(
       cacheKey,
       async () => {
-        const [productsCount, generatedImagesCount, modelsCount, scenesCount] = await Promise.all([
-          this.prisma.product.count({ where: { organizationId } }),
-          this.prisma.generatedImage.count({
-            where: { generationRequest: { organizationId } },
-          }),
-          this.prisma.modelProfile.count({ where: { organizationId } }),
-          this.prisma.scenePreset.count({
-            where: {
-              OR: [{ organizationId }, { organizationId: null }]
-            }
-          }),
-        ]);
+        const [productsCount, generatedImagesCount, modelsCount, scenesCount] =
+          await Promise.all([
+            this.prisma.product.count({ where: { organizationId } }),
+            this.prisma.generatedImage.count({
+              where: { generationRequest: { organizationId } },
+            }),
+            this.prisma.modelProfile.count({ where: { organizationId } }),
+            this.prisma.scenePreset.count({
+              where: {
+                OR: [{ organizationId }, { organizationId: null }],
+              },
+            }),
+          ]);
 
         return {
           productsCount,

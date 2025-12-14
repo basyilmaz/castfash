@@ -34,7 +34,7 @@ export interface BatchJobProgressDto {
 export class BatchService {
   private readonly logger = new Logger(BatchService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // ---------------------------------------------------------------------------
   // Create Batch Job
@@ -59,11 +59,11 @@ export class BatchService {
         createdBy,
         items: dto.items
           ? {
-            create: dto.items.map((item, index) => ({
-              itemIndex: index,
-              inputData: item.inputData || {},
-            })),
-          }
+              create: dto.items.map((item, index) => ({
+                itemIndex: index,
+                inputData: item.inputData || {},
+              })),
+            }
           : undefined,
       },
       include: { items: true },

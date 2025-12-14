@@ -51,7 +51,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     // Generate request ID for tracing
-    const requestId = (request.headers['x-request-id'] as string) ||
+    const requestId =
+      (request.headers['x-request-id'] as string) ||
       `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -150,8 +151,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 
   private isDevelopment(): boolean {
-    return process.env.NODE_ENV === 'development' ||
-      process.env.MODE === 'development';
+    return (
+      process.env.NODE_ENV === 'development' ||
+      process.env.MODE === 'development'
+    );
   }
 
   private sanitizeErrorMessage(message: string): string {
@@ -173,7 +176,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Unique constraint violation
     if (message.includes('Unique constraint')) {
-      const match = message.match(/constraint failed on the fields: \(`([^`]+)`\)/);
+      const match = message.match(
+        /constraint failed on the fields: \(`([^`]+)`\)/,
+      );
       const field = match ? match[1] : 'field';
       return `A record with this ${field} already exists`;
     }
@@ -184,8 +189,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Record not found
-    if (message.includes('Record to update not found') ||
-      message.includes('Record to delete does not exist')) {
+    if (
+      message.includes('Record to update not found') ||
+      message.includes('Record to delete does not exist')
+    ) {
       return 'Record not found';
     }
 

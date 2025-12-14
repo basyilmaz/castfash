@@ -24,7 +24,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly queueService: QueueService,
     private readonly promptService: PromptService,
-  ) { }
+  ) {}
 
   // System Config
   @Get('config')

@@ -38,17 +38,20 @@ interface KieResultJson {
 export class KieImageProvider implements AiImageProvider {
   private readonly logger = new Logger(KieImageProvider.name);
   private readonly envApiKey = process.env.KIE_API_KEY;
-  private readonly envModelId = process.env.KIE_MODEL_ID ?? 'google/nano-banana';
+  private readonly envModelId =
+    process.env.KIE_MODEL_ID ?? 'google/nano-banana';
 
   // KIE API endpoints
-  private readonly CREATE_TASK_URL = 'https://api.kie.ai/api/v1/jobs/createTask';
-  private readonly RECORD_INFO_URL = 'https://api.kie.ai/api/v1/jobs/recordInfo';
+  private readonly CREATE_TASK_URL =
+    'https://api.kie.ai/api/v1/jobs/createTask';
+  private readonly RECORD_INFO_URL =
+    'https://api.kie.ai/api/v1/jobs/recordInfo';
 
   // Polling settings
   private readonly MAX_POLL_ATTEMPTS = 60; // Max 60 attempts
   private readonly POLL_INTERVAL_MS = 2000; // 2 seconds between polls
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private async getConfigForOrg(organizationId?: number) {
     if (organizationId) {
@@ -98,7 +101,9 @@ export class KieImageProvider implements AiImageProvider {
       model: modelId,
       input: {
         prompt,
-        negative_prompt: negativePrompt || 'ugly, disfigured, blurry, low quality, extra limbs, bad anatomy',
+        negative_prompt:
+          negativePrompt ||
+          'ugly, disfigured, blurry, low quality, extra limbs, bad anatomy',
         image_urls: imageInputs || [],
         aspect_ratio: aspectRatio,
         resolution: resolution,
@@ -106,7 +111,9 @@ export class KieImageProvider implements AiImageProvider {
       },
     };
 
-    this.logger.debug(`KIE createTask payload: model=${payload.model}, prompt_len=${prompt.length}, image_urls_count=${imageInputs.length}`);
+    this.logger.debug(
+      `KIE createTask payload: model=${payload.model}, prompt_len=${prompt.length}, image_urls_count=${imageInputs.length}`,
+    );
     this.logger.debug(`KIE image_urls: ${JSON.stringify(imageInputs)}`);
 
     const response = await axios.post<KieTaskResponse>(
@@ -133,7 +140,10 @@ export class KieImageProvider implements AiImageProvider {
   /**
    * Poll for task completion
    */
-  private async pollTaskResult(apiKey: string, taskId: string): Promise<string> {
+  private async pollTaskResult(
+    apiKey: string,
+    taskId: string,
+  ): Promise<string> {
     for (let attempt = 0; attempt < this.MAX_POLL_ATTEMPTS; attempt++) {
       const response = await axios.get<KieRecordInfoResponse>(
         `${this.RECORD_INFO_URL}?taskId=${taskId}`,
@@ -172,11 +182,15 @@ export class KieImageProvider implements AiImageProvider {
       }
 
       // state === 'waiting', continue polling
-      this.logger.debug(`KIE task ${taskId} still waiting (attempt ${attempt + 1}/${this.MAX_POLL_ATTEMPTS})`);
+      this.logger.debug(
+        `KIE task ${taskId} still waiting (attempt ${attempt + 1}/${this.MAX_POLL_ATTEMPTS})`,
+      );
       await this.sleep(this.POLL_INTERVAL_MS);
     }
 
-    throw new Error(`KIE task ${taskId} timed out after ${this.MAX_POLL_ATTEMPTS} attempts`);
+    throw new Error(
+      `KIE task ${taskId} timed out after ${this.MAX_POLL_ATTEMPTS} attempts`,
+    );
   }
 
   private sleep(ms: number): Promise<void> {

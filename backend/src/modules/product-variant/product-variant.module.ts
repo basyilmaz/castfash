@@ -4,9 +4,9 @@ import { ProductVariantController } from './product-variant.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [ProductVariantController],
-    providers: [ProductVariantService],
-    exports: [ProductVariantService],
+  imports: [PrismaModule],
+  controllers: [ProductVariantController],
+  providers: [ProductVariantService],
+  exports: [ProductVariantService],
 })
-export class ProductVariantModule { }
+export class ProductVariantModule {}
