@@ -284,6 +284,64 @@ export class SeederService implements OnModuleInit {
         priority: 95,
         tags: ['negative', 'fashion', 'photography-specific'],
       },
+      {
+        name: 'Reference Image Preservation Negative',
+        type: PromptType.NEGATIVE,
+        category: PromptCategoryType.QUALITY,
+        content: 'altered product details, changed fabric texture, modified pattern, color shift, wrong color tone, distorted logo, changed brand elements, different material appearance, lost stitching details, missing buttons, altered zipper, changed collar shape, modified sleeve length, different neckline, lost embroidery, simplified details, smoothed textures, missing print elements, changed garment silhouette, proportion changes from reference',
+        priority: 100,
+        tags: ['negative', 'reference', 'preservation', 'detail-protection'],
+      },
+      {
+        name: 'Model Consistency Negative',
+        type: PromptType.NEGATIVE,
+        category: PromptCategoryType.MODEL,
+        content: 'changed facial features, altered face shape, different eye color, modified skin texture, changed hair color, altered hair style, different body proportions, changed height, modified body type, inconsistent skin tone, age change, different ethnicity than reference, altered makeup, changed jewelry, missing accessories from reference',
+        priority: 95,
+        tags: ['negative', 'model', 'consistency', 'face-preservation'],
+      },
+
+      // REFERENCE IMAGE QUALITY PRESERVATION Templates
+      {
+        name: 'Product Detail Preservation',
+        type: PromptType.MASTER,
+        category: PromptCategoryType.PRODUCT,
+        content: 'Preserve all original product details exactly as shown in the reference image. Maintain the exact fabric texture, color accuracy, pattern alignment, stitching details, button placement, zipper visibility, logo positioning, and garment silhouette. The product must appear identical to the reference with no simplification or alteration of design elements. True-to-life color reproduction matching the exact hue, saturation, and brightness of the original. Fabric drape and material properties must be accurately represented.',
+        priority: 100,
+        tags: ['reference', 'preservation', 'product-detail', 'accuracy'],
+      },
+      {
+        name: 'Model Feature Preservation',
+        type: PromptType.MASTER,
+        category: PromptCategoryType.MODEL,
+        content: 'Preserve the exact facial features, skin tone, and body proportions from the model reference image. Maintain consistent face shape, eye color, nose structure, lip shape, and overall facial identity. Keep the exact skin texture and complexion. Preserve hair color, style, length, and texture precisely. Body type, height proportions, and physical characteristics must remain unchanged. Any accessories, jewelry, or makeup from the reference should be accurately maintained.',
+        priority: 100,
+        tags: ['reference', 'preservation', 'model', 'facial-identity'],
+      },
+      {
+        name: 'High Fidelity Reference Merge',
+        type: PromptType.MASTER,
+        category: PromptCategoryType.GENERAL,
+        content: 'Combine the provided reference images with maximum fidelity preservation. The product reference image dictates all garment details: exact colors, patterns, textures, and design elements. The model reference image controls all human features: face, body, skin, and proportions. Merge these elements seamlessly while preserving 100% accuracy to both references. No creative interpretation or alteration of referenced elements. Only the pose, scene, and lighting should be modified according to the prompt.',
+        priority: 100,
+        tags: ['reference', 'merge', 'high-fidelity', 'dual-reference'],
+      },
+      {
+        name: 'Texture and Material Accuracy',
+        type: PromptType.STYLE,
+        category: PromptCategoryType.QUALITY,
+        content: 'Render all fabric textures with photographic accuracy: silk shows its characteristic sheen, cotton displays its soft matte finish, leather maintains its grain pattern, denim preserves its weave texture, lace retains its intricate pattern, velvet shows its directional pile, satin captures its smooth reflectivity, wool displays its fibrous texture, mesh shows its transparency pattern. Material properties like drape, stiffness, stretch, and weight must be visually accurate.',
+        priority: 90,
+        tags: ['texture', 'material', 'accuracy', 'fabric'],
+      },
+      {
+        name: 'Color Fidelity',
+        type: PromptType.STYLE,
+        category: PromptCategoryType.QUALITY,
+        content: 'Maintain exact color fidelity from reference images. Whites remain pure white without color cast. Blacks are deep and true. Reds, blues, greens, and all colors match the reference exactly. No color shifting, no over-saturation, no desaturation. Pattern colors maintain their exact relationship to each other. Metallic elements reflect accurately. Skin tones are natural and true to reference. The lighting enhances but never distorts original colors.',
+        priority: 90,
+        tags: ['color', 'fidelity', 'accuracy', 'reference'],
+      },
     ];
 
     for (const template of templates) {
