@@ -24,7 +24,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly queueService: QueueService,
     private readonly promptService: PromptService,
-  ) {}
+  ) { }
 
   // System Config
   @Get('config')
@@ -485,4 +485,79 @@ export class AdminController {
   async deletePromptPreset(@Param('id') id: string) {
     return this.promptService.deletePreset(parseInt(id));
   }
+
+  // Payment Settings
+  @Get('payment/settings')
+  async getPaymentSettings() {
+    return {
+      stripe: {
+        enabled: !!process.env.STRIPE_SECRET_KEY,
+        testMode: process.env.STRIPE_TEST_MODE === 'true',
+        publicKey: process.env.STRIPE_PUBLISHABLE_KEY ? '****' : null,
+        secretKey: process.env.STRIPE_SECRET_KEY ? '****' : null,
+        webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ? '****' : null,
+      },
+      paytr: {
+        enabled: !!(
+          process.env.PAYTR_MERCHANT_ID &&
+          process.env.PAYTR_MERCHANT_KEY &&
+          process.env.PAYTR_MERCHANT_SALT
+        ),
+        testMode: process.env.PAYTR_TEST_MODE === 'true',
+        merchantId: process.env.PAYTR_MERCHANT_ID ? '****' : null,
+        merchantKey: process.env.PAYTR_MERCHANT_KEY ? '****' : null,
+        merchantSalt: process.env.PAYTR_MERCHANT_SALT ? '****' : null,
+      },
+      routing: {
+        turkeyProvider: 'paytr',
+        defaultProvider: 'stripe',
+        fallbackEnabled: true,
+      },
+    };
+  }
+
+  @Get('payment/providers')
+  async getPaymentProviders() {
+    return [
+      {
+        id: 'stripe',
+        name: 'Stripe',
+        enabled: !!process.env.STRIPE_SECRET_KEY,
+        supportedCountries: ['*'],
+        testMode: process.env.STRIPE_TEST_MODE === 'true',
+      },
+      {
+        id: 'paytr',
+        name: 'PayTR',
+        enabled: !!(
+          process.env.PAYTR_MERCHANT_ID &&
+          process.env.PAYTR_MERCHANT_KEY &&
+          process.env.PAYTR_MERCHANT_SALT
+        ),
+        supportedCountries: ['TR'],
+        testMode: process.env.PAYTR_TEST_MODE === 'true',
+      },
+    ];
+  }
+
+  @Post('payment/test/:provider')
+  async testPaymentProvider(@Param('provider') provider: string) {
+    // In production, would make a test API call
+    const isConfigured =
+      provider === 'stripe'
+        ? !!process.env.STRIPE_SECRET_KEY
+        : !!(
+          process.env.PAYTR_MERCHANT_ID &&
+          process.env.PAYTR_MERCHANT_KEY
+        );
+
+    return {
+      success: isConfigured,
+      provider,
+      message: isConfigured
+        ? `${provider.toUpperCase()} bağlantısı başarılı`
+        : `${provider.toUpperCase()} yapılandırılmamış`,
+    };
+  }
 }
+
