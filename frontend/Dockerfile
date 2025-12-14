@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install dependencies (including devDependencies for build)
 COPY package*.json ./
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Copy source
 COPY . .
@@ -16,9 +16,6 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Build
 RUN npm run build
-
-# Remove devDependencies after build
-RUN npm prune --production
 
 # Set environment
 ENV NODE_ENV=production
