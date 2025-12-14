@@ -61,119 +61,228 @@ export class SeederService implements OnModuleInit {
     this.logger.log('Global scenes ensured.');
   }
 
+  /**
+   * Nano Banana Pro optimized prompt templates based on official best practices:
+   * - Natural language with full sentences
+   * - Subject + Description + Action + Setting + Style + Composition + Lighting
+   * - Detailed camera settings and angles
+   * - Negative prompts to exclude unwanted elements
+   * 
+   * Key principles:
+   * 1. Be specific and descriptive
+   * 2. Include lighting and camera details like a cinematographer
+   * 3. Use structured approach with logical components
+   * 4. Treat the AI like a human artist with conversational prompts
+   */
   private async ensureMasterPromptTemplates() {
     const templates = [
-      // Master Templates
+      // MASTER Templates - Complete prompts for fashion photography
       {
-        name: 'Fashion Product Master',
+        name: 'Fashion Editorial Master',
         type: PromptType.MASTER,
         category: PromptCategoryType.PRODUCT,
-        content: 'Professional fashion product photography, {product_type}, {model_description}, wearing the product naturally, {scene_description}, {lighting}, {style}, high-end fashion magazine quality, 8k resolution, sharp details',
-        variables: { product_type: '', model_description: '', scene_description: '', lighting: '', style: '' },
+        content: 'Create a high-end fashion editorial photograph featuring a professional model wearing {product_type}. The model has {skin_tone} skin, {hair_description} hair, and is captured in a {pose_style} pose. The setting is {scene_description} with {lighting_type} lighting creating {lighting_mood}. Shot with a {camera_angle} angle, the image has {style_aesthetic} aesthetic with photorealistic quality, 4K resolution, sharp focus on the garment details. The composition emphasizes the product while maintaining natural model proportions.',
+        variables: {
+          product_type: 'a summer dress',
+          skin_tone: 'warm',
+          hair_description: 'flowing dark',
+          pose_style: 'confident standing',
+          scene_description: 'a minimalist white studio',
+          lighting_type: 'soft diffused',
+          lighting_mood: 'flattering even illumination',
+          camera_angle: 'eye-level medium shot',
+          style_aesthetic: 'clean commercial'
+        },
         priority: 100,
-        tags: ['master', 'fashion', 'product'],
+        tags: ['master', 'fashion', 'editorial', 'nano-banana-pro'],
       },
       {
-        name: 'E-commerce Product Master',
+        name: 'E-commerce Product Photography Master',
         type: PromptType.MASTER,
         category: PromptCategoryType.PRODUCT,
-        content: 'Clean e-commerce product photo, {product_type}, professional model, {pose}, {background}, commercial photography, crisp and clear, product-focused, online store quality',
-        variables: { product_type: '', pose: '', background: '' },
+        content: 'Generate a professional e-commerce product photograph of {product_type} displayed on a model. The model stands in a {pose_description} position against {background_setting}. Lighting is {lighting_setup} to eliminate harsh shadows and highlight fabric texture. The shot is framed as a {shot_type} with the product clearly visible and occupying the primary visual focus. Style: clean, commercial, online store ready. Technical: photorealistic, crisp details, true-to-life colors, no distortion.',
+        variables: {
+          product_type: 'casual t-shirt',
+          pose_description: 'relaxed frontal',
+          background_setting: 'a seamless white backdrop',
+          lighting_setup: 'three-point studio lighting',
+          shot_type: 'full body shot'
+        },
+        priority: 95,
+        tags: ['master', 'ecommerce', 'product', 'nano-banana-pro'],
+      },
+      {
+        name: 'Lifestyle Fashion Master',
+        type: PromptType.MASTER,
+        category: PromptCategoryType.PRODUCT,
+        content: 'Capture an authentic lifestyle fashion photograph showing a model wearing {product_type} in a {environment_setting}. The scene conveys {mood_atmosphere} with the model engaged in {activity_action}. Natural {lighting_conditions} illuminates the scene, creating {shadow_quality}. The photograph is taken from a {viewing_angle} perspective with a {depth_of_field} depth of field. The overall aesthetic is {brand_style}, relatable and aspirational. High definition, magazine quality.',
+        variables: {
+          product_type: 'a casual sundress',
+          environment_setting: 'a sunlit café terrace',
+          mood_atmosphere: 'relaxed summer vibes',
+          activity_action: 'a natural candid moment',
+          lighting_conditions: 'golden hour sunlight',
+          shadow_quality: 'soft warm shadows',
+          viewing_angle: 'slightly candid wide',
+          depth_of_field: 'shallow bokeh',
+          brand_style: 'modern lifestyle brand'
+        },
         priority: 90,
-        tags: ['master', 'ecommerce', 'product'],
+        tags: ['master', 'lifestyle', 'candid', 'nano-banana-pro'],
       },
-      // Scene Templates
+
+      // SCENE Templates - Environment descriptions
       {
-        name: 'Beach Scene',
+        name: 'Tropical Beach Paradise',
         type: PromptType.SCENE,
         category: PromptCategoryType.BACKGROUND,
-        content: 'tropical beach setting, golden hour sunlight, ocean waves in background, palm trees, warm summer vibes',
+        content: 'A stunning tropical beach setting during golden hour. Crystal clear turquoise water gently lapping at white sand shores. Swaying palm trees frame the composition. The sky displays warm orange and pink sunset hues. Distant horizon line creates depth. Natural beach environment with no artificial elements.',
         priority: 80,
-        tags: ['scene', 'beach', 'outdoor'],
+        tags: ['scene', 'beach', 'tropical', 'outdoor', 'golden-hour'],
       },
       {
-        name: 'Studio White',
+        name: 'Minimalist White Studio',
         type: PromptType.SCENE,
         category: PromptCategoryType.BACKGROUND,
-        content: 'clean white studio background, professional photography studio, minimalist setting',
-        priority: 80,
-        tags: ['scene', 'studio', 'white'],
+        content: 'A clean, professional photography studio with seamless white cyclorama background. The infinite white backdrop creates a floating effect. No visible floor-wall transitions. Pure, distraction-free environment perfect for product focus. The setting is clinical, modern, and commercially versatile.',
+        priority: 85,
+        tags: ['scene', 'studio', 'white', 'minimalist', 'commercial'],
       },
       {
-        name: 'Urban Street',
+        name: 'Urban City Street',
         type: PromptType.SCENE,
         category: PromptCategoryType.BACKGROUND,
-        content: 'urban city street, modern architecture, street fashion environment, contemporary setting',
+        content: 'A contemporary urban street environment with modern architecture. Clean concrete sidewalks and sleek glass buildings in the background. The setting has a cosmopolitan, fashion-forward atmosphere. Urban textures like metal railings and contemporary storefronts add visual interest. Daytime city ambiance with natural street lighting.',
         priority: 75,
-        tags: ['scene', 'urban', 'street'],
+        tags: ['scene', 'urban', 'street', 'city', 'contemporary'],
       },
-      // Pose Templates
       {
-        name: 'Standing Confident',
+        name: 'Luxury Interior',
+        type: PromptType.SCENE,
+        category: PromptCategoryType.BACKGROUND,
+        content: 'An upscale luxury interior setting with elegant furnishings. Soft neutral color palette with marble surfaces and designer furniture visible in the background. Large windows allowing natural light to flood the space. The environment exudes sophistication, wealth, and refined taste. Clean lines and premium materials throughout.',
+        priority: 70,
+        tags: ['scene', 'interior', 'luxury', 'elegant', 'indoor'],
+      },
+
+      // POSE Templates - Model positioning
+      {
+        name: 'Confident Standing Power Pose',
         type: PromptType.POSE,
         category: PromptCategoryType.MODEL,
-        content: 'standing confidently, one hand on hip, relaxed posture, looking at camera',
-        priority: 70,
-        tags: ['pose', 'standing', 'confident'],
+        content: 'The model stands tall with excellent posture, one hand resting naturally on the hip. Feet shoulder-width apart creating a stable, confident stance. The body is angled slightly at three-quarters to the camera. Head tilted slightly up with a direct, engaging gaze toward the lens. Shoulders relaxed but pulled back. The pose conveys strength, confidence, and self-assurance.',
+        priority: 80,
+        tags: ['pose', 'standing', 'confident', 'power', 'frontal'],
       },
       {
-        name: 'Walking Dynamic',
+        name: 'Dynamic Walking Motion',
         type: PromptType.POSE,
         category: PromptCategoryType.MODEL,
-        content: 'walking pose, dynamic movement, natural stride, fashion runway style',
+        content: 'The model captured mid-stride in a natural walking motion. One leg forward, creating dynamic movement energy. Arms swing naturally at the sides. Hair and clothing show subtle motion blur suggesting movement. The walk is runway-inspired but natural, not exaggerated. The expression is focused and purposeful.',
+        priority: 75,
+        tags: ['pose', 'walking', 'dynamic', 'motion', 'runway'],
+      },
+      {
+        name: 'Relaxed Casual Stance',
+        type: PromptType.POSE,
+        category: PromptCategoryType.MODEL,
+        content: 'A relaxed, approachable pose with natural weight distribution. One leg slightly bent, creating an S-curve silhouette. Hands may be loosely at sides or one hand in pocket. The posture is comfortable and unforced. A soft, genuine smile or pleasant neutral expression. The overall feeling is friendly, accessible, and authentic.',
         priority: 70,
-        tags: ['pose', 'walking', 'dynamic'],
+        tags: ['pose', 'casual', 'relaxed', 'natural', 'approachable'],
       },
-      // Lighting Templates
       {
-        name: 'Soft Natural',
+        name: 'Seated Elegant',
+        type: PromptType.POSE,
+        category: PromptCategoryType.MODEL,
+        content: 'The model is seated gracefully on a surface appropriate to the scene. Legs positioned elegantly, either crossed or angled to the side. Upper body remains upright with good posture. Hands rest naturally in lap or on the seating surface. The seated position is sophisticated and polished, maintaining garment visibility.',
+        priority: 65,
+        tags: ['pose', 'seated', 'elegant', 'sophisticated'],
+      },
+
+      // LIGHTING Templates - Illumination settings
+      {
+        name: 'Soft Diffused Studio Light',
         type: PromptType.LIGHTING,
         category: PromptCategoryType.QUALITY,
-        content: 'soft natural lighting, diffused sunlight, no harsh shadows, flattering illumination',
-        priority: 60,
-        tags: ['lighting', 'natural', 'soft'],
+        content: 'Professional three-point lighting setup with large softboxes. Key light positioned 45 degrees to the subject creating gentle shadows. Fill light reduces contrast while maintaining dimension. Hair light adds separation from background. Even, flattering illumination with no harsh shadows. Color temperature: neutral daylight balanced.',
+        priority: 80,
+        tags: ['lighting', 'studio', 'soft', 'professional', 'three-point'],
       },
       {
-        name: 'Studio Professional',
+        name: 'Golden Hour Natural',
         type: PromptType.LIGHTING,
         category: PromptCategoryType.QUALITY,
-        content: 'professional studio lighting, three-point lighting setup, even illumination, commercial quality',
-        priority: 60,
-        tags: ['lighting', 'studio', 'professional'],
+        content: 'Warm, natural golden hour sunlight during the magic hour before sunset. The light creates a soft, warm glow with elongated gentle shadows. Color temperature is warm orange-yellow. The lighting wraps around the subject beautifully, creating a romantic, dreamy atmosphere. Natural lens flare may be present. Skin tones appear warm and healthy.',
+        priority: 75,
+        tags: ['lighting', 'golden-hour', 'natural', 'warm', 'outdoor'],
       },
       {
-        name: 'Golden Hour',
+        name: 'High Key Bright',
         type: PromptType.LIGHTING,
         category: PromptCategoryType.QUALITY,
-        content: 'golden hour lighting, warm sunset glow, romantic atmosphere, soft shadows',
-        priority: 55,
-        tags: ['lighting', 'golden', 'warm'],
+        content: 'High key lighting creating a bright, airy feel. Multiple light sources eliminate shadows almost entirely. The overall exposure is slightly elevated for a fresh, optimistic mood. Background and foreground are both well-lit. Perfect for commercial, friendly, accessible imagery. Clean and contemporary aesthetic.',
+        priority: 70,
+        tags: ['lighting', 'high-key', 'bright', 'commercial', 'fresh'],
       },
-      // Style Templates
       {
-        name: 'High Fashion',
+        name: 'Dramatic Side Light',
+        type: PromptType.LIGHTING,
+        category: PromptCategoryType.QUALITY,
+        content: 'Dramatic side lighting creating strong contrast and deep shadows. Single key light positioned 90 degrees to the subject. Dark shadows on the opposite side add mystery and depth. The lighting sculpts facial features and fabric textures. The mood is more artistic and editorial. A low-fill or no-fill approach for maximum drama.',
+        priority: 65,
+        tags: ['lighting', 'dramatic', 'side', 'contrast', 'editorial'],
+      },
+
+      // STYLE Templates - Aesthetic direction
+      {
+        name: 'High Fashion Editorial',
         type: PromptType.STYLE,
         category: PromptCategoryType.GENERAL,
-        content: 'high fashion aesthetic, vogue magazine style, editorial quality, sophisticated',
-        priority: 50,
-        tags: ['style', 'fashion', 'editorial'],
+        content: 'High fashion editorial aesthetic reminiscent of Vogue and Elle magazines. Sophisticated, polished, and aspirational imagery. Strong visual impact with attention to composition and negative space. The photography style is artistic yet commercially viable. Models appear elegant, refined, and fashion-forward. Premium luxury brand sensibility.',
+        priority: 80,
+        tags: ['style', 'high-fashion', 'editorial', 'vogue', 'luxury'],
       },
       {
-        name: 'Casual Lifestyle',
+        name: 'Casual Lifestyle Authentic',
         type: PromptType.STYLE,
         category: PromptCategoryType.GENERAL,
-        content: 'casual lifestyle photography, authentic and relatable, everyday fashion',
-        priority: 50,
-        tags: ['style', 'casual', 'lifestyle'],
+        content: 'Authentic lifestyle photography style that feels natural and unposed. The aesthetic is warm, relatable, and approachable. Images appear candid even when styled. The vibe is modern millennial or Gen-Z friendly. Colors are natural but vibrant. The photography bridges aspiration with attainability.',
+        priority: 75,
+        tags: ['style', 'lifestyle', 'authentic', 'casual', 'relatable'],
       },
-      // Negative Prompt Template
       {
-        name: 'Standard Negative',
+        name: 'Clean Commercial',
+        type: PromptType.STYLE,
+        category: PromptCategoryType.GENERAL,
+        content: 'Clean, crisp commercial photography optimized for e-commerce and advertising. The focus is entirely on the product with maximum clarity. Color accuracy is paramount for true-to-life representation. The style is professional, trustworthy, and purchase-driving. No artistic filters or heavy color grading. Pure product presentation.',
+        priority: 85,
+        tags: ['style', 'commercial', 'clean', 'ecommerce', 'product-focused'],
+      },
+      {
+        name: 'Streetwear Urban',
+        type: PromptType.STYLE,
+        category: PromptCategoryType.GENERAL,
+        content: 'Contemporary streetwear aesthetic with urban culture influence. The style is edgy, youthful, and trend-forward. Photography has an energetic, authentic street fashion feel. Bold, confident attitude in both pose and expression. The aesthetic appeals to fashion-conscious urban audiences. Contemporary cool factor is essential.',
+        priority: 70,
+        tags: ['style', 'streetwear', 'urban', 'edgy', 'contemporary'],
+      },
+
+      // NEGATIVE Prompt Templates - Elements to exclude
+      {
+        name: 'Standard Negative Prompt',
         type: PromptType.NEGATIVE,
         category: PromptCategoryType.QUALITY,
-        content: 'blurry, low quality, distorted, deformed, ugly, bad anatomy, wrong proportions, extra limbs, missing limbs, floating limbs, disconnected limbs, mutation, mutated, morbid, malformed, amateur, watermark, text, signature',
+        content: 'blurry, low quality, low resolution, pixelated, jpeg artifacts, noise, grain, out of focus, distorted, deformed, disfigured, ugly, bad anatomy, wrong proportions, extra limbs, missing limbs, floating limbs, disconnected limbs, extra fingers, missing fingers, mutated hands, mutation, mutated, morbid, malformed, amateur, unprofessional, watermark, text, signature, logo, brand name, cropped, cut off, bad framing',
         priority: 100,
-        tags: ['negative', 'standard'],
+        tags: ['negative', 'standard', 'quality-control'],
+      },
+      {
+        name: 'Fashion Photography Negative',
+        type: PromptType.NEGATIVE,
+        category: PromptCategoryType.QUALITY,
+        content: 'unflattering angles, bad lighting, harsh shadows, overexposed, underexposed, washed out colors, unnatural skin tones, red eye, awkward pose, stiff pose, unnatural expression, forced smile, closed eyes, clothing wrinkles, wardrobe malfunction, visible tags, measurement error, size distortion, product not visible, background clutter, distracting elements, competing focal points',
+        priority: 95,
+        tags: ['negative', 'fashion', 'photography-specific'],
       },
     ];
 
@@ -190,40 +299,50 @@ export class SeederService implements OnModuleInit {
         });
       }
     }
-    this.logger.log('Master prompt templates ensured.');
+    this.logger.log('Master prompt templates ensured (Nano Banana Pro optimized).');
   }
 
   private async ensureDefaultPresets() {
     const presets = [
       {
-        name: 'Beach Fashion',
-        description: 'Perfect for swimwear and summer clothing',
-        scenePrompt: 'tropical beach setting, golden hour sunlight, ocean waves',
-        posePrompt: 'standing confidently, relaxed beach pose',
-        lightingPrompt: 'golden hour lighting, warm natural light',
-        stylePrompt: 'summer fashion editorial, vacation vibes',
-        negativePrompt: 'blurry, low quality, distorted, deformed',
-        tags: ['beach', 'summer', 'swimwear'],
+        name: 'Beach Summer Collection',
+        description: 'Optimized for swimwear and summer clothing with tropical beach setting and golden hour lighting',
+        scenePrompt: 'A stunning tropical beach setting during golden hour. Crystal clear turquoise water gently lapping at white sand shores. Swaying palm trees frame the composition. The sky displays warm orange and pink sunset hues.',
+        posePrompt: 'A relaxed, approachable pose with natural weight distribution. One leg slightly bent, creating an S-curve silhouette. Hands loosely at sides. The posture is comfortable and unforced with a soft, genuine smile.',
+        lightingPrompt: 'Warm, natural golden hour sunlight during the magic hour before sunset. The light creates a soft, warm glow with elongated gentle shadows. Color temperature is warm orange-yellow. Skin tones appear warm and healthy.',
+        stylePrompt: 'Authentic lifestyle photography style that feels natural and unposed. The aesthetic is warm, relatable, and approachable. The vibe is modern and vacation-ready.',
+        negativePrompt: 'blurry, low quality, distorted, deformed, bad anatomy, harsh shadows, overexposed, underexposed, unnatural skin tones, awkward pose, stiff pose, watermark, text',
+        tags: ['beach', 'summer', 'swimwear', 'golden-hour', 'tropical'],
       },
       {
-        name: 'Studio Clean',
-        description: 'Classic studio look for any product',
-        scenePrompt: 'clean white studio background, professional setting',
-        posePrompt: 'professional model pose, product-focused',
-        lightingPrompt: 'professional studio lighting, soft and even',
-        stylePrompt: 'commercial product photography, clean and crisp',
-        negativePrompt: 'shadows, cluttered background, amateur',
-        tags: ['studio', 'clean', 'professional'],
+        name: 'Studio E-commerce Clean',
+        description: 'Professional studio setup for clean e-commerce product photography',
+        scenePrompt: 'A clean, professional photography studio with seamless white cyclorama background. The infinite white backdrop creates a floating effect. No visible floor-wall transitions. Pure, distraction-free environment.',
+        posePrompt: 'The model stands tall with excellent posture, one hand resting naturally on the hip. Feet shoulder-width apart creating a stable, confident stance. The body is angled slightly at three-quarters to the camera with a direct, engaging gaze.',
+        lightingPrompt: 'Professional three-point lighting setup with large softboxes. Key light positioned 45 degrees creating gentle shadows. Fill light reduces contrast while maintaining dimension. Even, flattering illumination with no harsh shadows.',
+        stylePrompt: 'Clean, crisp commercial photography optimized for e-commerce. The focus is entirely on the product with maximum clarity. Color accuracy is paramount for true-to-life representation. Professional and purchase-driving.',
+        negativePrompt: 'blurry, low quality, pixelated, distorted, wrong proportions, amateur, shadows, background clutter, visible tags, clothing wrinkles, product not visible, bad framing',
+        tags: ['studio', 'ecommerce', 'clean', 'professional', 'commercial'],
       },
       {
-        name: 'Urban Street Style',
-        description: 'Modern streetwear and casual fashion',
-        scenePrompt: 'urban city street, graffiti walls, contemporary setting',
-        posePrompt: 'street style pose, casual and confident',
-        lightingPrompt: 'natural street lighting, dynamic shadows',
-        stylePrompt: 'street fashion editorial, urban aesthetic',
-        negativePrompt: 'blurry, low quality, unflattering angles',
-        tags: ['urban', 'street', 'casual'],
+        name: 'Urban Streetwear',
+        description: 'Contemporary urban street style for streetwear and casual fashion',
+        scenePrompt: 'A contemporary urban street environment with modern architecture. Clean concrete sidewalks and sleek glass buildings in the background. The setting has a cosmopolitan, fashion-forward atmosphere with urban textures.',
+        posePrompt: 'The model captured mid-stride in a natural walking motion. One leg forward, creating dynamic movement energy. Arms swing naturally. The walk is runway-inspired but authentic. Expression is focused and confident.',
+        lightingPrompt: 'Natural street lighting with dynamic shadows creating depth and dimension. Daylight illumination that feels authentic to the urban environment. Contrast levels are moderate to add visual interest.',
+        stylePrompt: 'Contemporary streetwear aesthetic with urban culture influence. The style is edgy, youthful, and trend-forward. Photography has an energetic, authentic street fashion feel with bold, confident attitude.',
+        negativePrompt: 'blurry, low quality, distorted, unflattering angles, stiff pose, forced expression, overprocessed, unnatural colors, background clutter, distracting elements',
+        tags: ['urban', 'street', 'streetwear', 'city', 'contemporary', 'dynamic'],
+      },
+      {
+        name: 'Luxury Editorial',
+        description: 'High-end luxury fashion editorial style for premium products',
+        scenePrompt: 'An upscale luxury interior setting with elegant furnishings. Soft neutral color palette with marble surfaces and designer furniture visible in the background. Large windows allowing natural light to flood the space. The environment exudes sophistication.',
+        posePrompt: 'The model is seated gracefully on an elegant surface. Legs positioned elegantly, angled to the side. Upper body remains upright with excellent posture. Hands rest naturally. The seated position is sophisticated and polished.',
+        lightingPrompt: 'Dramatic side lighting creating strong contrast and artistic shadows. Single key light positioned at an angle to sculpt features and fabric textures. The mood is more artistic and editorial with premium feel.',
+        stylePrompt: 'High fashion editorial aesthetic reminiscent of Vogue and Elle magazines. Sophisticated, polished, and aspirational imagery. Strong visual impact with attention to composition. Premium luxury brand sensibility.',
+        negativePrompt: 'blurry, low quality, casual feel, everyday look, amateur lighting, flat composition, ordinary setting, budget aesthetic, poor posture, unflattering angles',
+        tags: ['luxury', 'editorial', 'high-fashion', 'elegant', 'sophisticated', 'premium'],
       },
     ];
 
@@ -240,6 +359,6 @@ export class SeederService implements OnModuleInit {
         });
       }
     }
-    this.logger.log('Default prompt presets ensured.');
+    this.logger.log('Default prompt presets ensured (Nano Banana Pro optimized).');
   }
 }
