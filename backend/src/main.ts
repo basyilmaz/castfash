@@ -7,7 +7,31 @@ import { SeederService } from './modules/seeder/seeder.service';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule);
+
+  // CORS configuration - more secure than { cors: true }
+  app.enableCors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3003',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+    credentials: true,
+    maxAge: 86400, // 24 hours
+  });
+
+  // Security headers middleware
+  app.use((req: any, res: any, next: any) => {
+    // Prevent clickjacking
+    res.setHeader('X-Frame-Options', 'DENY');
+    // Prevent MIME type sniffing
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // XSS Protection
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    // Referrer Policy
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // Remove X-Powered-By
+    res.removeHeader('X-Powered-By');
+    next();
+  });
 
   // Global exception filter
   app.useGlobalFilters(new GlobalExceptionFilter());
