@@ -73,7 +73,8 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  await app.listen(process.env.PORT || 3002);
+  const port = process.env.PORT || 3002;
+  await app.listen(port, '0.0.0.0'); // 0.0.0.0 for Railway/Docker
 
   // Run seeder to ensure default data
   try {

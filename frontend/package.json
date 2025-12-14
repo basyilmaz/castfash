@@ -1,9 +1,13 @@
 {
   "name": "@castintech/castfash-frontend",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "CastFash Frontend - AI-powered fashion catalog visual generation platform by CastinTech",
   "author": "CastinTech <info@castintech.com>",
   "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "homepage": "https://castfash.com",
   "repository": {
     "type": "git",
