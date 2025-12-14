@@ -294,4 +294,225 @@ export class PaymentService {
             include: { items: true },
         });
     }
+
+    // ==========================================================================
+    // Subscription Management
+    // ==========================================================================
+
+    /**
+     * Get organization's active subscription
+     */
+    async getActiveSubscription(organizationId: number) {
+        const org = await this.prisma.organization.findUnique({
+            where: { id: organizationId },
+            select: {
+                id: true,
+                name: true,
+                subscriptionStatus: true,
+                subscriptionPlan: true,
+                subscriptionExpiresAt: true,
+                remainingCredits: true,
+            },
+        });
+
+        if (!org) return null;
+
+        return {
+            organizationId: org.id,
+            organizationName: org.name,
+            status: org.subscriptionStatus || 'inactive',
+            plan: org.subscriptionPlan || 'free',
+            expiresAt: org.subscriptionExpiresAt,
+            remainingCredits: org.remainingCredits,
+            isActive: org.subscriptionStatus === 'active',
+        };
+    }
+
+    /**
+     * Update subscription status
+     */
+    async updateSubscription(
+        organizationId: number,
+        data: {
+            status?: string;
+            plan?: string;
+            expiresAt?: Date;
+        },
+    ) {
+        return this.prisma.organization.update({
+            where: { id: organizationId },
+            data: {
+                subscriptionStatus: data.status,
+                subscriptionPlan: data.plan,
+                subscriptionExpiresAt: data.expiresAt,
+            },
+        });
+    }
+
+    /**
+     * Cancel subscription
+     */
+    async cancelSubscription(organizationId: number) {
+        this.logger.log(`Cancelling subscription for org ${organizationId}`);
+
+        return this.prisma.organization.update({
+            where: { id: organizationId },
+            data: {
+                subscriptionStatus: 'cancelled',
+                subscriptionExpiresAt: new Date(), // Expires immediately
+            },
+        });
+    }
+
+    // ==========================================================================
+    // Invoice Management
+    // ==========================================================================
+
+    /**
+     * Create invoice for a purchase
+     */
+    async createInvoice(data: {
+        organizationId: number;
+        userId: number;
+        packageId: string;
+        amount: number;
+        credits: number;
+        stripeSessionId?: string;
+    }) {
+        const pkg = CREDIT_PACKAGES.find((p) => p.id === data.packageId);
+
+        const invoice = await this.prisma.invoice.create({
+            data: {
+                organizationId: data.organizationId,
+                userId: data.userId,
+                status: 'paid',
+                totalAmount: data.amount,
+                currency: pkg?.currency || 'usd',
+                stripeSessionId: data.stripeSessionId,
+                paidAt: new Date(),
+                items: {
+                    create: {
+                        description: `${pkg?.name || data.packageId} - ${data.credits} Kredi`,
+                        quantity: 1,
+                        unitPrice: data.amount,
+                        totalPrice: data.amount,
+                    },
+                },
+            },
+            include: { items: true },
+        });
+
+        this.logger.log(`Invoice created: ${invoice.id} for org ${data.organizationId}`);
+        return invoice;
+    }
+
+    /**
+     * Get all invoices for admin
+     */
+    async getAllInvoices(params?: { skip?: number; take?: number }) {
+        return this.prisma.invoice.findMany({
+            skip: params?.skip || 0,
+            take: params?.take || 50,
+            include: {
+                organization: {
+                    select: { id: true, name: true },
+                },
+                user: {
+                    select: { id: true, email: true },
+                },
+                items: true,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    // ==========================================================================
+    // Admin Package Management
+    // ==========================================================================
+
+    /**
+     * Get all credit packages
+     */
+    getPackages() {
+        return CREDIT_PACKAGES;
+    }
+
+    /**
+     * Get package by ID
+     */
+    getPackageById(packageId: string) {
+        return CREDIT_PACKAGES.find((pkg) => pkg.id === packageId) || null;
+    }
+
+    /**
+     * Get package statistics
+     */
+    async getPackageStats() {
+        const invoices = await this.prisma.invoice.findMany({
+            where: { status: 'paid' },
+            select: {
+                totalAmount: true,
+                createdAt: true,
+            },
+        });
+
+        const totalRevenue = invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+        const totalSales = invoices.length;
+
+        // Sales by month
+        const monthlyStats = invoices.reduce(
+            (acc, inv) => {
+                const month = inv.createdAt.toISOString().slice(0, 7); // YYYY-MM
+                if (!acc[month]) {
+                    acc[month] = { revenue: 0, sales: 0 };
+                }
+                acc[month].revenue += inv.totalAmount;
+                acc[month].sales += 1;
+                return acc;
+            },
+            {} as Record<string, { revenue: number; sales: number }>,
+        );
+
+        return {
+            packages: CREDIT_PACKAGES.map((pkg) => ({
+                ...pkg,
+                priceFormatted: `$${(pkg.price / 100).toFixed(2)}`,
+            })),
+            stats: {
+                totalRevenue,
+                totalRevenueFormatted: `$${(totalRevenue / 100).toFixed(2)}`,
+                totalSales,
+                monthlyStats,
+            },
+        };
+    }
+
+    /**
+     * Admin: Grant free credits to organization
+     */
+    async grantFreeCredits(
+        organizationId: number,
+        credits: number,
+        reason: string,
+        adminUserId: number,
+    ) {
+        await this.creditsService.addCredits(
+            organizationId,
+            credits,
+            CreditType.ADJUST,
+            `Admin tarafından eklendi: ${reason}`,
+        );
+
+        this.logger.log(
+            `Admin ${adminUserId} granted ${credits} free credits to org ${organizationId}: ${reason}`,
+        );
+
+        return {
+            success: true,
+            message: `${credits} kredi başarıyla eklendi`,
+            organizationId,
+            credits,
+        };
+    }
 }
+
