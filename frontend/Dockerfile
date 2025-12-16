@@ -24,7 +24,8 @@ WORKDIR /app
 
 # Set environment
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
 
 # Copy standalone build
 COPY --from=builder /app/.next/standalone ./
@@ -32,7 +33,7 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 # Expose port
-EXPOSE 3000
+EXPOSE 8080
 
 # Start with standalone server
 CMD ["node", "server.js"]
